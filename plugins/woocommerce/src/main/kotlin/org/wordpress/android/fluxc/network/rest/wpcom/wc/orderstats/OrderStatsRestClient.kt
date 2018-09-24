@@ -4,6 +4,7 @@ import android.content.Context
 import com.android.volley.RequestQueue
 import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.generated.WCStatsActionBuilder
+import org.wordpress.android.fluxc.generated.endpoint.WPCOMREST
 import org.wordpress.android.fluxc.generated.endpoint.WPCOMV2
 import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.WCOrderStatsModel
@@ -14,18 +15,14 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.NINETY_DAYS
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.ONE_YEAR
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.SEVEN_DAYS
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.THIRTY_DAYS
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
+import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsError
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
-import org.wordpress.android.fluxc.utils.SiteUtils
-import org.wordpress.android.util.DateTimeUtils
-import java.util.Calendar
+import org.wordpress.android.util.AppLog
+import org.wordpress.android.util.AppLog.T
 import javax.inject.Singleton
 
 @Singleton
@@ -51,10 +48,6 @@ class OrderStatsRestClient(
         }
 
         override fun toString() = name.toLowerCase()
-    }
-
-    enum class TopEarnersStatsApiUnit {
-        SEVEN_DAYS, THIRTY_DAYS, NINETY_DAYS, ONE_YEAR
     }
 
     /**
@@ -100,50 +93,75 @@ class OrderStatsRestClient(
         add(request)
     }
 
+    fun fetchVisitorStats(
+        site: SiteModel,
+        unit: OrderStatsApiUnit,
+        date: String,
+        quantity: Int,
+        force: Boolean = false
+    ) {
+        val url = WPCOMREST.sites.site(site.siteId).stats.visits.urlV1_1
+        val params = mapOf(
+                "unit" to unit.toString(),
+                "date" to date,
+                "quantity" to quantity.toString(),
+                "stat_fields" to "visitors")
+        val request = WPComGsonRequest
+                .buildGetRequest(url, params, VisitorStatsApiResponse::class.java,
+                        { response ->
+                            val visits = getVisitorsFromResponse(response)
+                            val payload = FetchVisitorStatsResponsePayload(site, unit, visits)
+                            mDispatcher.dispatch(WCStatsActionBuilder.newFetchedVisitorStatsAction(payload))
+                        },
+                        { networkError ->
+                            val orderError = networkErrorToOrderError(networkError)
+                            val payload = FetchVisitorStatsResponsePayload(orderError, site, unit)
+                            mDispatcher.dispatch(WCStatsActionBuilder.newFetchedVisitorStatsAction(payload))
+                        })
+
+        request.enableCaching(BaseRequest.DEFAULT_CACHE_LIFETIME)
+        if (force) request.setShouldForceUpdate()
+
+        add(request)
+    }
+
+    /**
+     * Returns the number of visitors from the VisitorStatsApiResponse data, which is an array of items for
+     * each period, the first element of which contains the date and the second contains the visitor count
+     */
+    private fun getVisitorsFromResponse(response: VisitorStatsApiResponse): Int {
+        return try {
+            response.data?.asJsonArray?.map { it.asJsonArray?.get(1)?.asInt ?: 0 }?.sum() ?: 0
+        } catch (e: Exception) {
+            AppLog.e(T.API, "${e.javaClass.simpleName} parsing visitor stats", e)
+            0
+        }
+    }
+
     fun fetchTopEarnersStats(
         site: SiteModel,
-        unit: TopEarnersStatsApiUnit,
+        unit: OrderStatsApiUnit,
+        date: String,
         limit: Int,
         force: Boolean = false
     ) {
-        val subtractDays = when (unit) {
-            SEVEN_DAYS -> 7
-            THIRTY_DAYS -> 30
-            NINETY_DAYS -> 90
-            ONE_YEAR -> 365
-        }
-
-        // get the current site data
-        val dateIso8601 = SiteUtils.getCurrentDateTimeForSite(site, "yyyy-MM-dd'T'HH:mm:ssZ")
-        val dateNow = DateTimeUtils.dateFromIso8601(dateIso8601)
-
-        // subtract the appropriate number of days
-        val cal = Calendar.getInstance()
-        cal.setTime(dateNow)
-        cal.add(Calendar.DATE, -subtractDays)
-        val dateAfter = DateTimeUtils.iso8601FromDate(cal.getTime())
-
-        // TODO: need to update this to the appropriate v3 Woo endpoint
         val url = WPCOMV2.sites.site(site.siteId).stats.top_earners.url
         val params = mapOf(
-                "after" to dateAfter,
-                "limit" to limit.toString(),
-                "extended_product_info" to "1",
-                "order_by" to "gross_revenue")
+                "unit" to unit.toString(),
+                "date" to date,
+                "limit" to limit.toString())
 
         val request = WPComGsonRequest.buildGetRequest(url, params, TopEarnersStatsApiResponse::class.java,
                 { response: TopEarnersStatsApiResponse ->
                     val wcTopEarners = response.data?.map {
                         WCTopEarnerModel().apply {
-                            productId = it.product_id ?: 0
-                            // currency = it.currency ?: "" // TODO: currency is missing from the response
+                            id = it.id ?: 0
+                            currency = it.currency ?: ""
                             image = it.image ?: ""
                             name = it.name ?: ""
                             price = it.price ?: 0.0
-                            ordersCount = it.orders_count ?: 0
-                            grossRevenue = it.gross_revenue ?: 0.0
-                            itemsSold = it.items_sold ?: 0
-                            permaLink = it.permalink ?: ""
+                            quantity = it.quantity ?: 0
+                            total = it.total ?: 0.0
                         }
                     } ?: emptyList()
 
