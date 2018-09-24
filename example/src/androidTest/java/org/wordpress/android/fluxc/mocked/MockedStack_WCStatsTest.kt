@@ -17,6 +17,7 @@ import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.module.ResponseMockingInterceptor
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
@@ -165,7 +166,7 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
     @Test
     fun testFetchTopEarnersStatsSuccess() {
         interceptor.respondWith("wc-top-earners-response-success.json")
-        orderStatsRestClient.fetchTopEarnersStats(siteModel, OrderStatsApiUnit.DAY, "2018-04-20", 10, true)
+        orderStatsRestClient.fetchTopEarnersStats(siteModel, TopEarnersStatsApiUnit.THIRTY_DAYS, 10, true)
 
         countDownLatch = CountDownLatch(1)
         assertTrue(countDownLatch.await(TestUtils.DEFAULT_TIMEOUT_MS.toLong(), MILLISECONDS))
@@ -175,7 +176,7 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
         with(payload) {
             assertNull(error)
             assertEquals(siteModel, site)
-            assertEquals(OrderStatsApiUnit.DAY, apiUnit)
+            assertEquals(TopEarnersStatsApiUnit.THIRTY_DAYS, unit)
             assertEquals(topEarners.size, 10)
         }
     }
@@ -188,7 +189,7 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
         }
 
         interceptor.respondWithError(errorJson)
-        orderStatsRestClient.fetchTopEarnersStats(siteModel, OrderStatsApiUnit.DAY, "invalid", 10, true)
+        orderStatsRestClient.fetchTopEarnersStats(siteModel, TopEarnersStatsApiUnit.THIRTY_DAYS, -1, true)
 
         countDownLatch = CountDownLatch(1)
         assertTrue(countDownLatch.await(TestUtils.DEFAULT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS))
@@ -198,7 +199,7 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
         with(payload) {
             assertNotNull(error)
             assertEquals(siteModel, site)
-            assertEquals(OrderStatsApiUnit.DAY, apiUnit)
+            assertEquals(TopEarnersStatsApiUnit.THIRTY_DAYS, unit)
             assertEquals(topEarners.size, 0)
             assertEquals(OrderStatsErrorType.INVALID_PARAM, error.type)
         }

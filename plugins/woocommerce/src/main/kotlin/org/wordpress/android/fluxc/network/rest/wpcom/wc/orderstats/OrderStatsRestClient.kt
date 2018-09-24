@@ -113,14 +113,17 @@ class OrderStatsRestClient(
             ONE_YEAR -> 365
         }
 
-        val dateNow = DateTimeUtils.dateFromIso8601(
-                SiteUtils.getCurrentDateTimeForSite(site, "yyyy-MM-dd")
-        )
+        // get the current site data
+        val dateIso8601 = SiteUtils.getCurrentDateTimeForSite(site, "yyyy-MM-dd'T'HH:mm:ssZ")
+        val dateNow = DateTimeUtils.dateFromIso8601(dateIso8601)
+
+        // subtract the appropriate number of days
         val cal = Calendar.getInstance()
         cal.setTime(dateNow)
         cal.add(Calendar.DATE, -subtractDays)
         val dateAfter = DateTimeUtils.iso8601FromDate(cal.getTime())
 
+        // TODO: need to update this to the appropriate v3 Woo endpoint
         val url = WPCOMV2.sites.site(site.siteId).stats.top_earners.url
         val params = mapOf(
                 "after" to dateAfter,

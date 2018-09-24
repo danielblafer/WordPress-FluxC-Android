@@ -25,6 +25,7 @@ import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.WCOrderModel
 import org.wordpress.android.fluxc.model.WCOrderNoteModel
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.CoreOrderStatus
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit
 import org.wordpress.android.fluxc.store.WCOrderStore
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchHasOrdersPayload
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchOrderNotesPayload
@@ -193,14 +194,14 @@ class WooCommerceFragment : Fragment() {
 
         fetch_top_earners_stats.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, false)
+                val payload = FetchTopEarnersStatsPayload(it, TopEarnersStatsApiUnit.SEVEN_DAYS, 10, false)
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_top_earners_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, true)
+                val payload = FetchTopEarnersStatsPayload(it, TopEarnersStatsApiUnit.SEVEN_DAYS, 10, true)
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
@@ -321,7 +322,7 @@ class WooCommerceFragment : Fragment() {
         }
 
         prependToLog(
-                "Fetched ${event.topEarners.size} top earner stats for ${event.granularity.toString()
+                "Fetched ${event.topEarners.size} top earner stats for ${event.unit.toString()
                         .toLowerCase()} from ${getFirstWCSite()?.name}"
         )
     }
