@@ -14,11 +14,18 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.NINETY_DAYS
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.ONE_YEAR
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.SEVEN_DAYS
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit.THIRTY_DAYS
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsError
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
+import org.wordpress.android.fluxc.utils.SiteUtils
+import org.wordpress.android.util.DateTimeUtils
+import java.util.Calendar
 import javax.inject.Singleton
 
 @Singleton
@@ -44,6 +51,10 @@ class OrderStatsRestClient(
         }
 
         override fun toString() = name.toLowerCase()
+    }
+
+    enum class TopEarnersStatsApiUnit {
+        SEVEN_DAYS, THIRTY_DAYS, NINETY_DAYS, ONE_YEAR
     }
 
     /**
@@ -91,28 +102,45 @@ class OrderStatsRestClient(
 
     fun fetchTopEarnersStats(
         site: SiteModel,
-        unit: OrderStatsApiUnit,
-        date: String,
+        unit: TopEarnersStatsApiUnit,
         limit: Int,
         force: Boolean = false
     ) {
+        val subtractDays = when (unit) {
+            SEVEN_DAYS -> 7
+            THIRTY_DAYS -> 30
+            NINETY_DAYS -> 90
+            ONE_YEAR -> 365
+        }
+
+        val dateNow = DateTimeUtils.dateFromIso8601(
+                SiteUtils.getCurrentDateTimeForSite(site, "yyyy-MM-dd")
+        )
+        val cal = Calendar.getInstance()
+        cal.setTime(dateNow)
+        cal.add(Calendar.DATE, -subtractDays)
+        val dateAfter = DateTimeUtils.iso8601FromDate(cal.getTime())
+
         val url = WPCOMV2.sites.site(site.siteId).stats.top_earners.url
         val params = mapOf(
-                "unit" to unit.toString(),
-                "date" to date,
-                "limit" to limit.toString())
+                "after" to dateAfter,
+                "limit" to limit.toString(),
+                "extended_product_info" to "1",
+                "order_by" to "gross_revenue")
 
         val request = WPComGsonRequest.buildGetRequest(url, params, TopEarnersStatsApiResponse::class.java,
                 { response: TopEarnersStatsApiResponse ->
                     val wcTopEarners = response.data?.map {
                         WCTopEarnerModel().apply {
-                            id = it.id ?: 0
-                            currency = it.currency ?: ""
+                            productId = it.product_id ?: 0
+                            // currency = it.currency ?: "" // TODO: currency is missing from the response
                             image = it.image ?: ""
                             name = it.name ?: ""
                             price = it.price ?: 0.0
-                            quantity = it.quantity ?: 0
-                            total = it.total ?: 0.0
+                            ordersCount = it.orders_count ?: 0
+                            grossRevenue = it.gross_revenue ?: 0.0
+                            itemsSold = it.items_sold ?: 0
+                            permaLink = it.permalink ?: ""
                         }
                     } ?: emptyList()
 

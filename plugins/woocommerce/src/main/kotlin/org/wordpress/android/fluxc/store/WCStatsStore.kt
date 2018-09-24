@@ -13,6 +13,7 @@ import org.wordpress.android.fluxc.model.WCTopEarnerModel
 import org.wordpress.android.fluxc.network.BaseRequest.BaseNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.TopEarnersStatsApiUnit
 import org.wordpress.android.fluxc.persistence.WCStatsSqlUtils
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.GENERIC_ERROR
 import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError
@@ -85,17 +86,17 @@ class WCStatsStore @Inject constructor(
 
     class FetchTopEarnersStatsPayload(
         val site: SiteModel,
-        val granularity: StatsGranularity,
+        val apiUnit: TopEarnersStatsApiUnit,
         val limit: Int = 10,
         val forced: Boolean = false
     ) : Payload<BaseNetworkError>()
 
     class FetchTopEarnersStatsResponsePayload(
         val site: SiteModel,
-        val apiUnit: OrderStatsApiUnit,
+        val unit: TopEarnersStatsApiUnit,
         val topEarners: List<WCTopEarnerModel> = emptyList()
     ) : Payload<OrderStatsError>() {
-        constructor(error: OrderStatsError, site: SiteModel, apiUnit: OrderStatsApiUnit) : this(site, apiUnit) {
+        constructor(error: OrderStatsError, site: SiteModel, unit: TopEarnersStatsApiUnit) : this(site, unit) {
             this.error = error
         }
     }
@@ -117,7 +118,7 @@ class WCStatsStore @Inject constructor(
         var causeOfChange: WCStatsAction? = null
     }
 
-    class OnWCTopEarnersChanged(val topEarners: List<WCTopEarnerModel>, val granularity: StatsGranularity) :
+    class OnWCTopEarnersChanged(val topEarners: List<WCTopEarnerModel>, val unit: TopEarnersStatsApiUnit) :
             OnChanged<OrderStatsError>() {
         var causeOfChange: WCStatsAction? = null
     }
@@ -210,8 +211,7 @@ class WCStatsStore @Inject constructor(
     private fun fetchTopEarnersStats(payload: FetchTopEarnersStatsPayload) {
         wcOrderStatsClient.fetchTopEarnersStats(
                 payload.site,
-                OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity),
+                payload.apiUnit,
                 payload.limit,
                 payload.forced
         )
@@ -233,8 +233,7 @@ class WCStatsStore @Inject constructor(
     }
 
     private fun handleFetchTopEarnersStatsCompleted(payload: FetchTopEarnersStatsResponsePayload) {
-        val granularity = StatsGranularity.fromOrderStatsApiUnit(payload.apiUnit)
-        val onTopEarnersChanged = OnWCTopEarnersChanged(payload.topEarners, granularity)
+        val onTopEarnersChanged = OnWCTopEarnersChanged(payload.topEarners, payload.unit)
         if (payload.isError) {
             onTopEarnersChanged.error = payload.error
         }
