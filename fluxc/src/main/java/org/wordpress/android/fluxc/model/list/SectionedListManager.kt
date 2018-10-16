@@ -10,6 +10,12 @@ sealed class Either<L, R> {
     class Left<L, R>(val value: L) : Either<L, R>()
 
     class Right<L, R>(val value: R) : Either<L, R>()
+
+    val isLeft: Boolean
+        get() = this is Left
+
+    val isRight: Boolean
+        get() = !isLeft
 }
 
 class SectionedListManager<S, T>(
@@ -24,11 +30,31 @@ class SectionedListManager<S, T>(
     private val fetchItem: (Long) -> Unit,
     private val fetchList: (ListDescriptor, Int) -> Unit
 ) {
+    companion object {
+        fun <S, T> areItemsTheSame(
+            new: SectionedListManager<S, T>,
+            old: SectionedListManager<S, T>,
+            newPosition: Int,
+            oldPosition: Int
+        ): Boolean {
+            val oldItem = old.items[oldPosition]
+            val newItem = new.items[newPosition]
+            if (oldItem.isLeft && newItem.isLeft) {
+                return (oldItem as Left).value == (newItem as Left).value
+            }
+            if (oldItem.isLeft || newItem.isLeft) {
+                return false
+            }
+            return (oldItem as Right).value.remoteItemId == (newItem as Right).value.remoteItemId
+        }
+    }
     val size: Int = items.size
 
     private var dispatchedRefreshAction = false
     private var dispatchedLoadMoreAction = false
     private val fetchRemoteItemSet = HashSet<Long>()
+
+    fun isSection(position: Int): Boolean = items[position].isLeft
 
     fun getItem(
         position: Int,

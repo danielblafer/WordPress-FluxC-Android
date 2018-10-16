@@ -35,9 +35,13 @@ import org.wordpress.android.fluxc.generated.WCOrderActionBuilder
 import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.WCOrderListDescriptor
 import org.wordpress.android.fluxc.model.WCOrderModel
+import org.wordpress.android.fluxc.model.list.Either
+import org.wordpress.android.fluxc.model.list.Either.Left
+import org.wordpress.android.fluxc.model.list.Either.Right
 import org.wordpress.android.fluxc.model.list.ListDescriptor
 import org.wordpress.android.fluxc.model.list.ListItemDataSource
-import org.wordpress.android.fluxc.model.list.ListManager
+import org.wordpress.android.fluxc.model.list.ListItemModel
+import org.wordpress.android.fluxc.model.list.SectionedListManager
 import org.wordpress.android.fluxc.store.ListStore
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged
 import org.wordpress.android.fluxc.store.ListStore.OnListItemsChanged
@@ -49,6 +53,8 @@ import org.wordpress.android.fluxc.store.WooCommerceStore
 import javax.inject.Inject
 
 private const val LOCAL_SITE_ID = "LOCAL_SITE_ID"
+private const val SECTION_VIEW_TYPE = 0
+private const val ORDER_VIEW_TYPE = 1
 
 class WooOrderListActivity : AppCompatActivity() {
     companion object {
@@ -67,7 +73,7 @@ class WooOrderListActivity : AppCompatActivity() {
 
     private lateinit var listDescriptor: WCOrderListDescriptor
     private lateinit var site: SiteModel
-    private lateinit var listManager: ListManager<WCOrderModel>
+    private lateinit var listManager: SectionedListManager<String, WCOrderModel>
 
     private var listAdapter: OrderListAdapter? = null
     private var refreshListDataJob: Job? = null
@@ -144,15 +150,15 @@ class WooOrderListActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateListManager(listManager: ListManager<WCOrderModel>, diffResult: DiffResult) {
+    private fun updateListManager(listManager: SectionedListManager<String, WCOrderModel>, diffResult: DiffResult) {
         this.listManager = listManager
         swipeToRefresh.isRefreshing = listManager.isFetchingFirstPage
         loadingMoreProgressBar.visibility = if (listManager.isLoadingMore) View.VISIBLE else View.GONE
         listAdapter?.setListManager(listManager, diffResult)
     }
 
-    private suspend fun getListDataFromStore(listDescriptor: ListDescriptor): ListManager<WCOrderModel> {
-        return listStore.getListManager(listDescriptor, null, object : ListItemDataSource<WCOrderModel> {
+    private suspend fun getListDataFromStore(listDescriptor: ListDescriptor): SectionedListManager<String, WCOrderModel> {
+        val dataSource = object : ListItemDataSource<WCOrderModel> {
             override fun fetchItem(listDescriptor: ListDescriptor, remoteItemId: Long) {
                 val orderToFetch = WCOrderModel().apply {
                     this.remoteOrderId = remoteItemId
@@ -170,8 +176,14 @@ class WooOrderListActivity : AppCompatActivity() {
             }
 
             override fun getItems(listDescriptor: ListDescriptor, remoteItemIds: List<Long>): Map<Long, WCOrderModel> {
-                val result = wcOrderStore.getOrdersByRemoteOrderIds(remoteItemIds, site)
-                return result
+                return wcOrderStore.getOrdersByRemoteOrderIds(remoteItemIds, site)
+            }
+        }
+        return listStore.getSectionedListManager(listDescriptor, dataSource, { listItems ->
+            val ordersAsRight = listItems.map { Right<String, ListItemModel>(it) }
+            ordersAsRight.asSequence().chunked(10)
+                    .fold(listOf<Either<String, ListItemModel>>()) { acc, list ->
+                        acc.asSequence().plus(listOf(Left("Section Title"))).plus(list).toList()
             }
         })
     }
@@ -226,26 +238,40 @@ class WooOrderListActivity : AppCompatActivity() {
     // region Classes
     class OrderListAdapter(
         context: Context,
-        private var listManager: ListManager<WCOrderModel>
+        private var listManager: SectionedListManager<String, WCOrderModel>
     ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         private val layoutInflater = LayoutInflater.from(context)
 
-        fun setListManager(listManager: ListManager<WCOrderModel>, diffResult: DiffResult) {
+        fun setListManager(listManager: SectionedListManager<String, WCOrderModel>, diffResult: DiffResult) {
             this.listManager = listManager
             diffResult.dispatchUpdatesTo(this)
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = layoutInflater.inflate(R.layout.order_list_row, parent, false)
-            return OrderViewHolder(view)
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = when (viewType) {
+            SECTION_VIEW_TYPE -> {
+                val view = layoutInflater.inflate(R.layout.order_list_section, parent, false)
+                SectionViewHolder(view)
+            }
+            else -> {
+                val view = layoutInflater.inflate(R.layout.order_list_row, parent, false)
+                OrderViewHolder(view)
+            }
         }
 
         override fun getItemCount() = listManager.size
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val orderHolder = holder as OrderViewHolder
-            val orderModel = listManager.getItem(position)
+        override fun getItemViewType(position: Int): Int =
+                if (listManager.isSection(position)) SECTION_VIEW_TYPE else ORDER_VIEW_TYPE
 
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val itemAtPosition = listManager.getItem(position)
+            if (itemAtPosition?.isLeft == true) {
+                val sectionHolder = holder as SectionViewHolder
+                sectionHolder.title.text = (itemAtPosition as Left).value
+                return
+            }
+            val orderModel = (itemAtPosition as Right?)?.value
+            val orderHolder = holder as OrderViewHolder
             orderModel?.let {
                 val id = it.remoteOrderId
                 val customerName = it.getCustomerName()
@@ -273,16 +299,18 @@ class WooOrderListActivity : AppCompatActivity() {
             val statusView: TextView = itemView.findViewById(R.id.order_status)
             val loadingView: ViewGroup = itemView.findViewById(R.id.order_loading)
         }
+
+        private class SectionViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
+            val title: TextView = itemView.findViewById(R.id.section_title)
+        }
     }
 
     class DiffCallback(
-        private val old: ListManager<WCOrderModel>,
-        private val new: ListManager<WCOrderModel>
+        private val old: SectionedListManager<String, WCOrderModel>,
+        private val new: SectionedListManager<String, WCOrderModel>
     ) : DiffUtil.Callback() {
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return ListManager.areItemsTheSame(new, old, newItemPosition, oldItemPosition) { oldItem, newItem ->
-                oldItem.id == newItem.id
-            }
+            return SectionedListManager.areItemsTheSame(new, old, newItemPosition, oldItemPosition)
         }
 
         override fun getOldListSize() = old.size
@@ -292,11 +320,21 @@ class WooOrderListActivity : AppCompatActivity() {
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
             val oldItem = old.getItem(oldItemPosition, false, false)
             val newItem = new.getItem(newItemPosition, false, false)
-
-            return (oldItem == null && newItem == null) ||
-                    ((oldItem?.remoteOrderId == newItem?.remoteOrderId) &&
-                            (oldItem?.getCustomerName() == newItem?.getCustomerName()) &&
-                            (oldItem?.status == newItem?.status))
+            if (oldItem == null && newItem == null) {
+                return true
+            }
+            if (oldItem == null || newItem == null) {
+                return false
+            }
+            if (oldItem is Left && newItem is Left) {
+                return oldItem == newItem
+            }
+            if (oldItem is Left || newItem is Left) {
+                return false
+            }
+            val oldOrder = (oldItem as Right).value
+            val newOrder = (newItem as Right).value
+            return oldOrder.getCustomerName() == newOrder.getCustomerName() && oldOrder.status == newOrder.status
         }
     }
     // endregion
