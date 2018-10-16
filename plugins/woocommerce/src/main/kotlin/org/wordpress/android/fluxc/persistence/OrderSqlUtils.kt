@@ -72,6 +72,8 @@ object OrderSqlUtils {
                 .execute()
     }
 
+    fun deleteAllOrders() = WellSql.delete(WCOrderModel::class.java).execute()
+
     fun insertOrIgnoreOrderNotes(notes: List<WCOrderNoteModel>): Int {
         var totalChanged = 0
         notes.forEach { totalChanged += insertOrIgnoreOrderNote(it) }
@@ -115,5 +117,16 @@ object OrderSqlUtils {
                 .equals(WCOrderNoteModelTable.LOCAL_SITE_ID, site.id)
                 .endWhere()
                 .execute()
+    }
+
+    fun getOrdersByRemoteIds(remoteIds: List<Long>, localSiteId: Int): List<WCOrderModel> {
+        return if (remoteIds.isNotEmpty()) {
+            WellSql.select(WCOrderModel::class.java)
+                    .where().isIn(WCOrderModelTable.REMOTE_ORDER_ID, remoteIds)
+                    .equals(WCOrderModelTable.LOCAL_SITE_ID, localSiteId).endWhere()
+                    .asModel
+        } else {
+            emptyList()
+        }
     }
 }

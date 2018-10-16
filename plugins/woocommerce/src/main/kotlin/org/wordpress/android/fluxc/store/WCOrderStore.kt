@@ -9,8 +9,13 @@ import org.wordpress.android.fluxc.action.WCOrderAction.FETCH_ORDERS_COUNT
 import org.wordpress.android.fluxc.action.WCOrderAction.FETCH_ORDER_NOTES
 import org.wordpress.android.fluxc.action.WCOrderAction.FETCH_HAS_ORDERS
 import org.wordpress.android.fluxc.action.WCOrderAction.POST_ORDER_NOTE
+import org.wordpress.android.fluxc.action.WCOrderAction.REMOVE_ALL_ORDERS
 import org.wordpress.android.fluxc.annotations.action.Action
+import org.wordpress.android.fluxc.generated.ListActionBuilder
+import org.wordpress.android.fluxc.generated.WCOrderActionBuilder
 import org.wordpress.android.fluxc.model.SiteModel
+import org.wordpress.android.fluxc.model.WCOrderListDescriptor
+import org.wordpress.android.fluxc.model.WCOrderListItemModel
 import org.wordpress.android.fluxc.model.WCOrderModel
 import org.wordpress.android.fluxc.model.WCOrderNoteModel
 import org.wordpress.android.fluxc.model.order.OrderIdentifier
@@ -19,6 +24,10 @@ import org.wordpress.android.fluxc.network.BaseRequest.BaseNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.OrderRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.CoreOrderStatus
 import org.wordpress.android.fluxc.persistence.OrderSqlUtils
+import org.wordpress.android.fluxc.store.ListStore.FetchedListItemsPayload
+import org.wordpress.android.fluxc.store.ListStore.ListError
+import org.wordpress.android.fluxc.store.ListStore.ListErrorType
+import org.wordpress.android.fluxc.store.ListStore.ListItemsChangedPayload
 import org.wordpress.android.fluxc.store.WCOrderStore.OrderErrorType.GENERIC_ERROR
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
@@ -31,6 +40,23 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
     : Store(dispatcher) {
     companion object {
         const val NUM_ORDERS_PER_FETCH = 25
+    }
+
+    class FetchOrderListPayload(
+        val listDescriptor: WCOrderListDescriptor,
+        val offset: Int
+    ) : Payload<BaseNetworkError>()
+
+    class FetchOrderListResponsePayload(
+        val listDescriptor: WCOrderListDescriptor,
+        val orderListItems: List<WCOrderListItemModel> = emptyList(),
+        val loadedMore: Boolean = false,
+        val canLoadMore: Boolean = false
+    ) : Payload<OrderError>() {
+        constructor(
+            error: OrderError,
+            listDescriptor: WCOrderListDescriptor
+        ) : this(listDescriptor) { this.error = error }
     }
 
     class FetchOrdersPayload(
@@ -47,6 +73,13 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
         var canLoadMore: Boolean = false
     ) : Payload<OrderError>() {
         constructor(error: OrderError, site: SiteModel) : this(site) { this.error = error }
+    }
+
+    class FetchSingleOrderResponsePayload(
+        var site: SiteModel,
+        var order: WCOrderModel
+    ) : Payload<OrderError>() {
+        constructor(error: OrderError, site: SiteModel, order: WCOrderModel) : this(site, order) { this.error = error }
     }
 
     class FetchOrdersCountPayload(
@@ -170,7 +203,9 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
         val actionType = action.type as? WCOrderAction ?: return
         when (actionType) {
             // remote actions
+            WCOrderAction.FETCH_ORDER_LIST -> fetchOrderList(action.payload as FetchOrderListPayload)
             WCOrderAction.FETCH_ORDERS -> fetchOrders(action.payload as FetchOrdersPayload)
+            WCOrderAction.FETCH_SINGLE_ORDER -> fetchSingleOrder(action.payload as RemoteOrderPayload)
             WCOrderAction.FETCH_ORDERS_COUNT -> fetchOrdersCount(action.payload as FetchOrdersCountPayload)
             WCOrderAction.UPDATE_ORDER_STATUS -> updateOrderStatus(action.payload as UpdateOrderStatusPayload)
             WCOrderAction.FETCH_ORDER_NOTES -> fetchOrderNotes(action.payload as FetchOrderNotesPayload)
@@ -178,7 +213,11 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
             WCOrderAction.FETCH_HAS_ORDERS -> fetchHasOrders(action.payload as FetchHasOrdersPayload)
 
             // remote responses
+            WCOrderAction.FETCHED_ORDER_LIST ->
+                handleFetchOrderListCompleted(action.payload as FetchOrderListResponsePayload)
             WCOrderAction.FETCHED_ORDERS -> handleFetchOrdersCompleted(action.payload as FetchOrdersResponsePayload)
+            WCOrderAction.FETCHED_SINGLE_ORDER ->
+                handleFetchSingleOrderCompleted(action.payload as FetchSingleOrderResponsePayload)
             WCOrderAction.FETCHED_ORDERS_COUNT ->
                 handleFetchOrdersCountCompleted(action.payload as FetchOrdersCountResponsePayload)
             WCOrderAction.UPDATED_ORDER_STATUS -> handleUpdateOrderStatusCompleted(action.payload as RemoteOrderPayload)
@@ -187,7 +226,14 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
             WCOrderAction.POSTED_ORDER_NOTE -> handlePostOrderNoteCompleted(action.payload as RemoteOrderNotePayload)
             WCOrderAction.FETCHED_HAS_ORDERS -> handleFetchHasOrdersCompleted(
                     action.payload as FetchHasOrdersResponsePayload)
+
+            // local actions
+            WCOrderAction.REMOVE_ALL_ORDERS -> removeAllLocalOrders()
         }
+    }
+
+    private fun fetchOrderList(payload: FetchOrderListPayload) {
+        with(payload) { wcOrderRestClient.fetchOrders(listDescriptor, offset) }
     }
 
     private fun fetchOrders(payload: FetchOrdersPayload) {
@@ -197,6 +243,10 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
             0
         }
         wcOrderRestClient.fetchOrders(payload.site, offset, payload.statusFilter)
+    }
+
+    private fun fetchSingleOrder(payload: RemoteOrderPayload) {
+        with(payload) { wcOrderRestClient.fetchSingleOrder(site, order.remoteOrderId) }
     }
 
     private fun fetchOrdersCount(payload: FetchOrdersCountPayload) {
@@ -217,6 +267,40 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
 
     private fun postOrderNote(payload: PostOrderNotePayload) {
         wcOrderRestClient.postOrderNote(payload.order, payload.site, payload.note)
+    }
+
+    fun getOrdersByRemoteOrderIds(remoteIds: List<Long>, site: SiteModel): Map<Long, WCOrderModel> {
+        val orderList = OrderSqlUtils.getOrdersByRemoteIds(remoteIds, site.id)
+        return orderList.associateBy({it.remoteOrderId}, {it})
+    }
+
+    private fun handleFetchOrderListCompleted(payload: FetchOrderListResponsePayload) {
+        var fetchedListItemsError: ListError? = null
+        val orderIds: MutableList<Long> = mutableListOf()
+
+        if (payload.isError) {
+            fetchedListItemsError = ListError(ListErrorType.GENERIC_ERROR, payload.error.message)
+        } else {
+            val site = payload.listDescriptor.site
+            payload.orderListItems.forEach { orderIds.add(it.remoteOrderId) }
+
+            // Fetch the order detail for each item
+            val orders: Map<Long, WCOrderModel> = getOrdersByRemoteOrderIds(orderIds, site)
+
+            //
+            payload.orderListItems.forEach {
+                val order: WCOrderModel? = orders[it.remoteOrderId]
+                if (order != null && order.dateModified != it.dateModified) {
+                    // Dispatch a request to fetch this single order
+                    mDispatcher.dispatch(WCOrderActionBuilder.newFetchSingleOrderAction(
+                            RemoteOrderPayload(order, site)))
+                }
+            }
+        }
+
+        with(payload) {
+            FetchedListItemsPayload(listDescriptor, orderIds, loadedMore, canLoadMore, fetchedListItemsError)
+        }.also { mDispatcher.dispatch(ListActionBuilder.newFetchedListItemsAction(it)) }
     }
 
     private fun handleFetchOrdersCompleted(payload: FetchOrdersResponsePayload) {
@@ -241,6 +325,24 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
         onOrderChanged.causeOfChange = WCOrderAction.FETCH_ORDERS
 
         emitChange(onOrderChanged)
+    }
+
+    private fun handleFetchSingleOrderCompleted(payload: FetchSingleOrderResponsePayload) {
+        val onOrderChanged: OnOrderChanged
+
+        if (payload.isError) {
+            onOrderChanged = OnOrderChanged(0).also { it.error = payload.error }
+        } else {
+            val rowsAffected = updateOrder(payload.order)
+            onOrderChanged = OnOrderChanged(rowsAffected)
+        }
+
+        onOrderChanged.causeOfChange = WCOrderAction.FETCH_SINGLE_ORDER
+        emitChange(onOrderChanged)
+
+        // Let the list manager know something has changed
+        mDispatcher.dispatch(ListActionBuilder.newListItemsChangedAction(
+                ListItemsChangedPayload(WCOrderListDescriptor.calculateTypeIdentifier(payload.site.id))))
     }
 
     /**
@@ -278,14 +380,19 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
         if (payload.isError) {
             onOrderChanged = OnOrderChanged(0).also { it.error = payload.error }
         } else {
-            val rowsAffected = OrderSqlUtils.insertOrUpdateOrder(payload.order)
+            val rowsAffected = updateOrder(payload.order)
             onOrderChanged = OnOrderChanged(rowsAffected)
         }
 
         onOrderChanged.causeOfChange = WCOrderAction.UPDATE_ORDER_STATUS
-
         emitChange(onOrderChanged)
+
+        // Let the list manager know something has changed
+        mDispatcher.dispatch(ListActionBuilder.newListItemsChangedAction(
+                ListItemsChangedPayload(WCOrderListDescriptor.calculateTypeIdentifier(payload.site.id))))
     }
+
+    private fun updateOrder(order: WCOrderModel) = OrderSqlUtils.insertOrUpdateOrder(order)
 
     private fun handleFetchOrderNotesCompleted(payload: FetchOrderNotesResponsePayload) {
         val onOrderChanged: OnOrderChanged
@@ -313,5 +420,10 @@ class WCOrderStore @Inject constructor(dispatcher: Dispatcher, private val wcOrd
 
         onOrderChanged.causeOfChange = POST_ORDER_NOTE
         emitChange(onOrderChanged)
+    }
+
+    private fun removeAllLocalOrders() {
+        val rowsAffected: Int = OrderSqlUtils.deleteAllOrders()
+        emitChange(OnOrderChanged(rowsAffected).apply { causeOfChange = REMOVE_ALL_ORDERS })
     }
 }
