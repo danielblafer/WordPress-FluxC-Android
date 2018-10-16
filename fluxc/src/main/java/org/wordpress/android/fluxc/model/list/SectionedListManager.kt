@@ -15,7 +15,7 @@ sealed class Either<L, R> {
 class SectionedListManager<S, T>(
     private val dispatcher: Dispatcher,
     private val listDescriptor: ListDescriptor,
-    private val items: List<ListItemModel>,
+    private val items: List<Either<S, ListItemModel>>,
     private val listData: Map<Long, T>,
     private val loadMoreOffset: Int,
     val isFetchingFirstPage: Boolean,
@@ -30,10 +30,6 @@ class SectionedListManager<S, T>(
     private var dispatchedLoadMoreAction = false
     private val fetchRemoteItemSet = HashSet<Long>()
 
-    private fun remoteItemId(remoteItemIndex: Int): Long {
-        return items[remoteItemIndex].remoteItemId
-    }
-
     fun getItem(
         position: Int,
         shouldFetchIfNull: Boolean = true,
@@ -42,7 +38,11 @@ class SectionedListManager<S, T>(
         if (shouldLoadMoreIfNecessary && position > size - loadMoreOffset) {
             loadMore()
         }
-        val remoteItemId = items[position].remoteItemId
+        val itemAtPosition = items[position]
+        if (itemAtPosition is Left) {
+            return Left(itemAtPosition.value)
+        }
+        val remoteItemId = (itemAtPosition as Right).value.remoteItemId
         val item = listData[remoteItemId]
         if (item == null) {
             if (shouldFetchIfNull) {

@@ -12,6 +12,7 @@ import org.wordpress.android.fluxc.action.ListAction.FETCH_LIST
 import org.wordpress.android.fluxc.action.ListAction.LIST_ITEMS_CHANGED
 import org.wordpress.android.fluxc.action.ListAction.LIST_ITEMS_REMOVED
 import org.wordpress.android.fluxc.annotations.action.Action
+import org.wordpress.android.fluxc.model.list.Either
 import org.wordpress.android.fluxc.model.list.LIST_STATE_TIMEOUT
 import org.wordpress.android.fluxc.model.list.ListDescriptor
 import org.wordpress.android.fluxc.model.list.ListDescriptorTypeIdentifier
@@ -103,6 +104,7 @@ class ListStore @Inject constructor(
     suspend fun <S, T> getSectionedListManager(
         listDescriptor: ListDescriptor,
         dataSource: ListItemDataSource<T>,
+        sectioned: (List<ListItemModel>) -> List<Either<S, ListItemModel>>,
         loadMoreOffset: Int = DEFAULT_LOAD_MORE_OFFSET
     ): SectionedListManager<S, T> = withContext(Dispatchers.Default) {
         val listModel = listSqlUtils.getList(listDescriptor)
@@ -111,10 +113,10 @@ class ListStore @Inject constructor(
         } else emptyList()
         val listState = if (listModel != null) getListState(listModel) else null
         val listData = dataSource.getItems(listDescriptor, listItems.map { it.remoteItemId })
-        return@withContext SectionedListManager<S, T>(
+        return@withContext SectionedListManager(
                 dispatcher = mDispatcher,
                 listDescriptor = listDescriptor,
-                items = listItems,
+                items = sectioned(listItems),
                 listData = listData,
                 loadMoreOffset = loadMoreOffset,
                 isFetchingFirstPage = listState?.isFetchingFirstPage() ?: false,
