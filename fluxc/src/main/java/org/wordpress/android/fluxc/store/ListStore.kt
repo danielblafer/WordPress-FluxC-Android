@@ -20,6 +20,7 @@ import org.wordpress.android.fluxc.model.list.ListItemModel
 import org.wordpress.android.fluxc.model.list.ListManager
 import org.wordpress.android.fluxc.model.list.ListModel
 import org.wordpress.android.fluxc.model.list.ListState
+import org.wordpress.android.fluxc.model.list.SectionedListManager
 import org.wordpress.android.fluxc.network.BaseRequest.BaseNetworkError
 import org.wordpress.android.fluxc.persistence.ListItemSqlUtils
 import org.wordpress.android.fluxc.persistence.ListSqlUtils
@@ -86,6 +87,33 @@ class ListStore @Inject constructor(
                 dispatcher = mDispatcher,
                 listDescriptor = listDescriptor,
                 localItems = localItems,
+                items = listItems,
+                listData = listData,
+                loadMoreOffset = loadMoreOffset,
+                isFetchingFirstPage = listState?.isFetchingFirstPage() ?: false,
+                isLoadingMore = listState?.isLoadingMore() ?: false,
+                canLoadMore = listState?.canLoadMore() ?: false,
+                fetchItem = { remoteItemId ->
+                    dataSource.fetchItem(listDescriptor, remoteItemId)
+                },
+                fetchList = dataSource::fetchList
+        )
+    }
+
+    suspend fun <S, T> getSectionedListManager(
+        listDescriptor: ListDescriptor,
+        dataSource: ListItemDataSource<T>,
+        loadMoreOffset: Int = DEFAULT_LOAD_MORE_OFFSET
+    ): SectionedListManager<S, T> = withContext(Dispatchers.Default) {
+        val listModel = listSqlUtils.getList(listDescriptor)
+        val listItems = if (listModel != null) {
+            listItemSqlUtils.getListItems(listModel.id)
+        } else emptyList()
+        val listState = if (listModel != null) getListState(listModel) else null
+        val listData = dataSource.getItems(listDescriptor, listItems.map { it.remoteItemId })
+        return@withContext SectionedListManager<S, T>(
+                dispatcher = mDispatcher,
+                listDescriptor = listDescriptor,
                 items = listItems,
                 listData = listData,
                 loadMoreOffset = loadMoreOffset,
