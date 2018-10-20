@@ -184,4 +184,39 @@ class ListManager<T>(
             fetchRemoteItemSet.add(remoteItemId)
         }
     }
+
+    class SectionedListManager<T>(private val listManagers: List<ListManager<T>>) {
+        // TODO: Take `canLoadMore` into account
+        val size: Int by lazy {
+            listManagers.asSequence().map { it.size }.sum()
+        }
+        // Size shouldn't just sum everything up. If the first list can load more, we should only return the first
+        // ones size. After that, we check for the second one and so forth
+
+        fun getItem(
+            position: Int,
+            shouldFetchIfNull: Boolean = true,
+            shouldLoadMoreIfNecessary: Boolean = true
+        ): T? {
+            TODO()
+            // find which list manager this should use and defer to it
+        }
+
+        fun refresh(): Boolean {
+            // TODO: is it really this easy?
+            return listManagers.asSequence().map { it.refresh() }.any()
+        }
+
+        fun hasRemoteItem(remoteItemId: Long): Boolean {
+            // we should probably check each list manager for the existence of this item
+            // TODO: is it really this easy?
+            return listManagers.any { it.hasRemoteItem(remoteItemId) }
+        }
+
+        fun findIndices(predicate: (T) -> Boolean): List<Int> {
+            // we need to find indices in each list and normalize the index here
+            TODO()
+        }
+    }
+}
 }
