@@ -18,6 +18,7 @@ import org.wordpress.android.fluxc.store.ListStore
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged.CauseOfListChange.FIRST_PAGE_FETCHED
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged.CauseOfListChange.LOADED_MORE
+import org.wordpress.android.fluxc.store.PostListMarker
 import org.wordpress.android.fluxc.store.PostStore
 import org.wordpress.android.fluxc.store.PostStore.FetchPostListPayload
 import java.util.concurrent.CountDownLatch
@@ -62,8 +63,8 @@ class PostListConnectedTestHelper(
 
     private fun fetchFirstPageAndAssert(
         postListDescriptor: PostListDescriptor,
-        dataSource: ListItemDataSource<PostModel>
-    ): ListManager<PostModel> {
+        dataSource: ListItemDataSource<PostModel, String>
+    ): ListManager<PostModel, String> {
         // Get the initial ListManager from ListStore and assert that everything is as expected
         val listManagerBefore = runBlocking {
             listStore.getListManager(postListDescriptor, dataSource)
@@ -163,8 +164,12 @@ class PostListConnectedTestHelper(
         countDownLatch.countDown()
     }
 
-    private fun listItemDataSource(fetchList: (ListDescriptor, Int) -> Unit): ListItemDataSource<PostModel> =
-            object : ListItemDataSource<PostModel> {
+    private fun listItemDataSource(fetchList: (ListDescriptor, Int) -> Unit): ListItemDataSource<PostModel, String> =
+            object : ListItemDataSource<PostModel, String> {
+                override fun getMarker(markerId: Int): String {
+                    return PostListMarker.fromId(markerId)?.title!! // TODO
+                }
+
                 override fun fetchItem(listDescriptor: ListDescriptor, remoteItemId: Long) {
                 }
 

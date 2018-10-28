@@ -8,17 +8,21 @@ import com.yarolegovich.wellsql.core.annotation.Table
 
 @Table
 @RawConstraints(
-        "FOREIGN KEY(LIST_ID) REFERENCES ListModel(_id) ON DELETE CASCADE",
-        "UNIQUE(LIST_ID, REMOTE_ITEM_ID)"
+        "FOREIGN KEY(LIST_ID) REFERENCES ListModel(_id) ON DELETE CASCADE"
 )
 class ListItemModel(@PrimaryKey @Column private var id: Int = 0) : Identifiable {
     constructor(listId: Int, remoteItemId: Long): this() {
         this.listId = listId
         this.remoteItemId = remoteItemId
     }
+    constructor(listId: Int, markerId: Int): this() {
+        this.listId = listId
+        this.markerId = markerId
+    }
 
     @Column var listId: Int = 0
     @Column var remoteItemId: Long = 0
+    @Column var markerId: Int = 0
 
     override fun getId(): Int = id
 

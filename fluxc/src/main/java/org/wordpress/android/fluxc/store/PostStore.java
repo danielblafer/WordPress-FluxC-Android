@@ -42,6 +42,9 @@ import org.wordpress.android.fluxc.persistence.PostSqlUtils;
 import org.wordpress.android.fluxc.store.ListStore.FetchedListItemsPayload;
 import org.wordpress.android.fluxc.store.ListStore.ListError;
 import org.wordpress.android.fluxc.store.ListStore.ListErrorType;
+import org.wordpress.android.fluxc.store.ListStore.ListItemId;
+import org.wordpress.android.fluxc.store.ListStore.ListItemId.MarkerId;
+import org.wordpress.android.fluxc.store.ListStore.ListItemId.RemoteItemId;
 import org.wordpress.android.fluxc.store.ListStore.ListItemsChangedPayload;
 import org.wordpress.android.fluxc.store.ListStore.ListItemsRemovedPayload;
 import org.wordpress.android.util.AppLog;
@@ -591,8 +594,13 @@ public class PostStore extends Store {
             }
         }
 
+        List<ListItemId> listItemIds = new ArrayList<>();
+        listItemIds.add(new MarkerId((payload.loadedMore ? PostListMarker.OTHERS : PostListMarker.TODAY).getId()));
+        for (Long remotePostId : postIds) {
+            listItemIds.add(new RemoteItemId(remotePostId));
+        }
         FetchedListItemsPayload fetchedListItemsPayload =
-                new FetchedListItemsPayload(payload.listDescriptor, postIds,
+                new FetchedListItemsPayload(payload.listDescriptor, listItemIds,
                         payload.loadedMore, payload.canLoadMore, fetchedListItemsError);
         mDispatcher.dispatch(ListActionBuilder.newFetchedListItemsAction(fetchedListItemsPayload));
     }

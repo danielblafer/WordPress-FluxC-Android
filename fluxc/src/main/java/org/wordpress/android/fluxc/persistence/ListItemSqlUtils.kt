@@ -32,6 +32,9 @@ class ListItemSqlUtils @Inject constructor() {
                     .orderBy(ListModelTable.ID, SelectQuery.ORDER_ASCENDING)
                     .asModel
 
+    // TODO: If we have markers and we delete all the items under a marker, is it a problem to keep the marker?
+    // TODO: if it is a problem, we might be able to find markers where they come after each other and delete first ones
+    // TODO: Also check other delete functions for that ^^
     /**
      * This function deletes [ListItemModel] records for the [listIds].
      */

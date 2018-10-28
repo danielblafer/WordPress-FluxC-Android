@@ -22,12 +22,15 @@ import org.wordpress.android.fluxc.model.list.ListItemModel
 import org.wordpress.android.fluxc.model.list.ListManager
 import org.wordpress.android.fluxc.model.list.ListManagerItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.LocalItem
+import org.wordpress.android.fluxc.model.list.ListManagerItem.MarkerItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.RemoteItem
 import org.wordpress.android.fluxc.model.list.ListModel
 import org.wordpress.android.fluxc.model.list.ListState
 import org.wordpress.android.fluxc.network.BaseRequest.BaseNetworkError
 import org.wordpress.android.fluxc.persistence.ListItemSqlUtils
 import org.wordpress.android.fluxc.persistence.ListSqlUtils
+import org.wordpress.android.fluxc.store.ListStore.ListItemId.MarkerId
+import org.wordpress.android.fluxc.store.ListStore.ListItemId.RemoteItemId
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged.CauseOfListChange
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.DateTimeUtils
@@ -39,6 +42,17 @@ import javax.inject.Singleton
 const val DEFAULT_EXPIRATION_DURATION = 1000L * 60 * 60 * 24 * 7
 // When we should load more data for a list
 const val DEFAULT_LOAD_MORE_OFFSET = 10
+
+enum class PostListMarker(val id: Int, val title: String) {
+    TODAY(1, "TODAY"),
+    OTHERS(2, "OTHERS");
+
+    companion object {
+        fun fromId(id: Int): PostListMarker? {
+            return PostListMarker.values().firstOrNull { it.id == id }
+        }
+    }
+}
 
 /**
  * This Store is responsible for managing lists and their metadata. One of the designs goals for this Store is expose
@@ -84,31 +98,39 @@ class ListStore @Inject constructor(
      * @return An immutable list manager that exposes enough information about a list to be used by adapters. See
      * [ListManager] for more details.
      */
-    suspend fun <T> getListManager(
+    suspend fun <T, M> getListManager(
         listDescriptor: ListDescriptor,
-        dataSource: ListItemDataSource<T>,
-        loadMoreOffset: Int = DEFAULT_LOAD_MORE_OFFSET
-    ): ListManager<T> = withContext(Dispatchers.Default) {
+        dataSource: ListItemDataSource<T, M>,
+        loadMoreOffset: Int = DEFAULT_LOAD_MORE_OFFSET ): ListManager<T, M> = withContext(Dispatchers.Default) {
         val listModel = listSqlUtils.getList(listDescriptor)
         // Get the remote ids of items for the list from the DB
-        val remoteIdsFromDb = if (listModel != null) {
-            listItemSqlUtils.getListItems(listModel.id).map { it.remoteItemId }
+        val itemsFromDb = if (listModel != null) {
+            listItemSqlUtils.getListItems(listModel.id)
+                    .map { if (it.remoteItemId == 0L) MarkerId(it.markerId) else RemoteItemId(it.remoteItemId) }
         } else emptyList()
         // Get the remote ids that client asks for to be included if they are not already in the remote ids from DB
-        val remoteItemIdsToInclude = dataSource.remoteItemIdsToInclude(listDescriptor)?.let { remoteIdsToInclude ->
-            remoteIdsToInclude.filter { !remoteIdsFromDb.contains(it) }
-        } ?: emptyList()
+        // TODO: Fix this
+//        val remoteItemIdsToInclude = dataSource.remoteItemIdsToInclude(listDescriptor)?.let { remoteIdsToInclude ->
+//            remoteIdsToInclude.filter { !remoteIdsFromDb.contains(it) }
+//        } ?: emptyList()
         // Add the remote ids together and filter out the ids the client asks to be hidden
-        val remoteIds = remoteItemIdsToInclude.asSequence().plus(remoteIdsFromDb).filter {
-            dataSource.remoteItemsToHide(listDescriptor)?.contains(it) != true
-        }.toList()
+//        val remoteIds = remoteItemIdsToInclude.asSequence().plus(remoteIdsFromDb).filter {
+//            dataSource.remoteItemsToHide(listDescriptor)?.contains(it) != true
+//        }.toList()
 
+        val onlyRemoteIds = itemsFromDb.mapNotNull { (it as? RemoteItemId)?.id }
         val listState = if (listModel != null) getListState(listModel) else null
-        val listData = dataSource.getItems(listDescriptor, remoteIds)
+        val listData = dataSource.getItems(listDescriptor, onlyRemoteIds)
         val localItems = dataSource.localItems(listDescriptor) ?: emptyList()
         // Add the local items and remote items in one list of `ListManagerItem`s
-        val allItems: List<ListManagerItem<T>> = localItems.asSequence().map { LocalItem(it) }
-                .plus(remoteIds.map { RemoteItem(it, listData[it]) }).toList()
+        val allItems: List<ListManagerItem<T, M>> = localItems.asSequence().map { LocalItem<T, M>(it) }
+                .plus(itemsFromDb.map {
+                    if (it is RemoteItemId) {
+                        RemoteItem<T, M>(it.id,listData[it.id])
+                    } else {
+                        MarkerItem<T, M>(dataSource.getMarker((it as MarkerId).id))
+                    }
+                }).toList()
         return@withContext ListManager(
                 dispatcher = mDispatcher,
                 listDescriptor = listDescriptor,
@@ -177,11 +199,12 @@ class ListStore @Inject constructor(
             val listModel = requireNotNull(listSqlUtils.getList(payload.listDescriptor)) {
                 "The `ListModel` can never be `null` here since either a new list is inserted or existing one updated"
             }
-            listItemSqlUtils.insertItemList(payload.remoteItemIds.map { remoteItemId ->
-                val listItemModel = ListItemModel()
-                listItemModel.listId = listModel.id
-                listItemModel.remoteItemId = remoteItemId
-                return@map listItemModel
+            listItemSqlUtils.insertItemList(payload.ids.map { listId ->
+                if (listId is RemoteItemId) {
+                    ListItemModel(listModel.id, listId.id)
+                } else {
+                    ListItemModel(listModel.id, (listId as MarkerId).id)
+                }
             })
         } else {
             listSqlUtils.insertOrUpdateList(payload.listDescriptor, ListState.ERROR)
@@ -336,13 +359,13 @@ class ListStore @Inject constructor(
      * @property listDescriptor List descriptor will be provided when the action to fetch items will be dispatched
      * from other Stores. The same list descriptor will need to be used in this payload so [ListStore] can decide
      * which list to update.
-     * @property remoteItemIds Fetched item ids
+     * @property ids Fetched item ids // TODO: update comment
      * @property loadedMore Indicates whether the first page is fetched or we loaded more data
      * @property canLoadMore Indicates whether there is more data to be loaded from the server.
      */
     class FetchedListItemsPayload(
         val listDescriptor: ListDescriptor,
-        val remoteItemIds: List<Long>,
+        val ids: List<ListItemId>,
         val loadedMore: Boolean,
         val canLoadMore: Boolean,
         error: ListError?
@@ -367,5 +390,10 @@ class ListStore @Inject constructor(
     enum class ListErrorType {
         GENERIC_ERROR,
         PERMISSION_ERROR
+    }
+
+    sealed class ListItemId {
+        class RemoteItemId(val id: Long): ListItemId()
+        class MarkerId(val id: Int): ListItemId()
     }
 }

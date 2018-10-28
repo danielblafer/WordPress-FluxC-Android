@@ -3,7 +3,7 @@ package org.wordpress.android.fluxc.model.list
 /**
  * This is an interface used to tell how to fetch and get items for the specific model used in the list.
  */
-interface ListItemDataSource<T> {
+interface ListItemDataSource<T, M> {
     /**
      * Should fetch the item for the given [ListDescriptor] and [remoteItemId].
      */
@@ -18,6 +18,9 @@ interface ListItemDataSource<T> {
      * Should return the items available for the given [ListDescriptor] and [remoteItemIds].
      */
     fun getItems(listDescriptor: ListDescriptor, remoteItemIds: List<Long>): Map<Long, T>
+
+    // TODO: document
+    fun getMarker(markerId: Int): M
 
     /**
      * Optional function to return the ordered local items to be shown at the top of the list

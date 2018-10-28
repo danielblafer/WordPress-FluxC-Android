@@ -2,15 +2,24 @@ package org.wordpress.android.fluxc.model.list
 
 import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.generated.ListActionBuilder
+import org.wordpress.android.fluxc.model.list.ItemOrMarker.Item
+import org.wordpress.android.fluxc.model.list.ItemOrMarker.Marker
+import org.wordpress.android.fluxc.model.list.ListManagerItem.MarkerItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.RemoteItem
 import org.wordpress.android.fluxc.store.ListStore.FetchListPayload
 
 /**
  * A sealed class to make it easier to manage local and remote items together.
  */
-sealed class ListManagerItem<T>(val value: T?) {
-    class LocalItem<T>(value: T) : ListManagerItem<T>(value)
-    class RemoteItem<T>(val remoteItemId: Long, value: T?) : ListManagerItem<T>(value)
+sealed class ListManagerItem<T, M>(val value: T?, val marker: M?) {
+    class LocalItem<T, M>(value: T) : ListManagerItem<T, M>(value, null)
+    class RemoteItem<T, M>(val remoteItemId: Long, value: T?) : ListManagerItem<T, M>(value, null)
+    class MarkerItem<T, M>(marker: M) : ListManagerItem<T, M>(null, marker)
+}
+
+sealed class ItemOrMarker {
+    class Item<T>(val value: T?): ItemOrMarker()
+    class Marker<M>(val marker: M): ItemOrMarker()
 }
 
 /**
@@ -32,10 +41,10 @@ sealed class ListManagerItem<T>(val value: T?) {
  * @property size The number of items in the list
  *
  */
-class ListManager<T>(
+class ListManager<T, M>(
     private val dispatcher: Dispatcher,
     private val listDescriptor: ListDescriptor,
-    private val items: List<ListManagerItem<T>>,
+    private val items: List<ListManagerItem<T, M>>,
     private val loadMoreOffset: Int,
     val isFetchingFirstPage: Boolean,
     val isLoadingMore: Boolean,
@@ -67,7 +76,7 @@ class ListManager<T>(
         position: Int,
         shouldFetchIfNull: Boolean = true,
         shouldLoadMoreIfNecessary: Boolean = true
-    ): T? {
+    ): ItemOrMarker {
         assert(position in 0..(size - 1)) {
             "Position is out of bounds!"
         }
@@ -78,7 +87,10 @@ class ListManager<T>(
         if (item is RemoteItem && item.value == null && shouldFetchIfNull) {
             fetchItemIfNecessary(item.remoteItemId)
         }
-        return item.value
+        if (item is MarkerItem) {
+            return Marker(item.marker)
+        }
+        return Item(item.value)
     }
 
     /**
