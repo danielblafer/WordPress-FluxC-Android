@@ -67,7 +67,7 @@ class ListManager<T, S>(
         position: Int,
         shouldFetchIfNull: Boolean = true,
         shouldLoadMoreIfNecessary: Boolean = true
-    ): T? {
+    ): ListManagerItem<T, S> {
         assert(position in 0..(size - 1)) {
             "Position is out of bounds!"
         }
@@ -78,18 +78,7 @@ class ListManager<T, S>(
         if (item is RemoteItem && item.value == null && shouldFetchIfNull) {
             fetchItemIfNecessary(item.remoteItemId)
         }
-        return item.value
-    }
-
-    /**
-     * Returns the remote item id for the given position if it's a remote item and `null` otherwise.
-     */
-    fun getRemoteItemId(position: Int): Long? {
-        return (items[position] as? RemoteItem)?.remoteItemId
-    }
-
-    fun getSummary(position: Int): S? {
-        return items[position].summary
+        return item
     }
 
     /**

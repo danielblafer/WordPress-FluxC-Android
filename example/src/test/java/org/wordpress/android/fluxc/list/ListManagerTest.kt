@@ -276,7 +276,7 @@ class ListManagerTest {
                 fetchList = fetchList
         )
         localItems.forEachIndexed { index, item ->
-            assertEquals(listManager.getItem(index), item.value)
+            assertEquals(listManager.getItem(index), item)
         }
     }
 

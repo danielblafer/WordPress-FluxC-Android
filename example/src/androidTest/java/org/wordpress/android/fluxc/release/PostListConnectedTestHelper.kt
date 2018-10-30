@@ -199,7 +199,7 @@ class PostListConnectedTestHelper(
      */
     private fun assertPostSummaryList(listManager: ListManager<PostModel, PostSummaryModel>) {
         for (i in 0..(listManager.size - 1)) {
-            val summary = listManager.getSummary(i)
+            val summary = listManager.getItem(i).summary
             assertNotNull("All post summaries must be inserted in the DB", summary)
         }
     }
