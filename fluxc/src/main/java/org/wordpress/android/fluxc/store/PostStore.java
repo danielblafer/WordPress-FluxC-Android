@@ -28,6 +28,7 @@ import org.wordpress.android.fluxc.model.list.ListOrder;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForRestSite;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForXmlRpcSite;
+import org.wordpress.android.fluxc.model.list.PostSummaryModel;
 import org.wordpress.android.fluxc.model.post.PostStatus;
 import org.wordpress.android.fluxc.model.revisions.Diff;
 import org.wordpress.android.fluxc.model.revisions.LocalDiffModel;
@@ -38,6 +39,7 @@ import org.wordpress.android.fluxc.model.revisions.RevisionsModel;
 import org.wordpress.android.fluxc.network.BaseRequest.BaseNetworkError;
 import org.wordpress.android.fluxc.network.rest.wpcom.post.PostRestClient;
 import org.wordpress.android.fluxc.network.xmlrpc.post.PostXMLRPCClient;
+import org.wordpress.android.fluxc.persistence.ListItemSummarySqlUtils;
 import org.wordpress.android.fluxc.persistence.PostSqlUtils;
 import org.wordpress.android.fluxc.store.ListStore.FetchedListItemsPayload;
 import org.wordpress.android.fluxc.store.ListStore.ListError;
@@ -81,10 +83,12 @@ public class PostStore extends Store {
     public static class PostListItem {
         public Long remotePostId;
         public String lastModified;
+        public String title;
 
-        public PostListItem(Long remotePostId, String lastModified) {
+        public PostListItem(Long remotePostId, String lastModified, String title) {
             this.remotePostId = remotePostId;
             this.lastModified = lastModified;
+            this.title = title;
         }
     }
 
@@ -280,16 +284,19 @@ public class PostStore extends Store {
 
     private final PostRestClient mPostRestClient;
     private final PostXMLRPCClient mPostXMLRPCClient;
+    private final ListItemSummarySqlUtils mListItemSummarySqlUtils;
     // Ensures that the UploadStore is initialized whenever the PostStore is,
     // to ensure actions are shadowed and repeated by the UploadStore
     @SuppressWarnings("unused")
     @Inject UploadStore mUploadStore;
 
     @Inject
-    public PostStore(Dispatcher dispatcher, PostRestClient postRestClient, PostXMLRPCClient postXMLRPCClient) {
+    public PostStore(Dispatcher dispatcher, PostRestClient postRestClient, PostXMLRPCClient postXMLRPCClient,
+                     ListItemSummarySqlUtils listItemSummarySqlUtils) {
         super(dispatcher);
         mPostRestClient = postRestClient;
         mPostXMLRPCClient = postXMLRPCClient;
+        mListItemSummarySqlUtils = listItemSummarySqlUtils;
     }
 
     @Override
@@ -414,6 +421,13 @@ public class PostStore extends Store {
             postMap.put(post.getRemotePostId(), post);
         }
         return postMap;
+    }
+
+    public Map<Long, PostSummaryModel> getPostSummariesByRemotePostIds(List<Long> remoteIds, SiteModel site) {
+        if (site == null) {
+            return Collections.emptyMap();
+        }
+        return mListItemSummarySqlUtils.getPostSummariesByRemotePostIds(remoteIds, site.getId());
     }
 
     /**
@@ -577,10 +591,13 @@ public class PostStore extends Store {
             postIds = Collections.emptyList();
         } else {
             postIds = new ArrayList<>(payload.postListItems.size());
+            List<PostSummaryModel> postSummaryList = new ArrayList<>(payload.postListItems.size());
             SiteModel site = payload.listDescriptor.getSite();
             for (PostListItem item : payload.postListItems) {
                 postIds.add(item.remotePostId);
+                postSummaryList.add(new PostSummaryModel(site.getId(), item.remotePostId, item.title));
             }
+            mListItemSummarySqlUtils.insertPostSummaryList(postSummaryList);
             Map<Long, PostModel> posts = getPostsByRemotePostIds(postIds, site);
             for (PostListItem item : payload.postListItems) {
                 PostModel post = posts.get(item.remotePostId);

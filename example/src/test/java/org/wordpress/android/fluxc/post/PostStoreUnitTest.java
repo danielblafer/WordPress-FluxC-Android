@@ -22,6 +22,7 @@ import org.wordpress.android.fluxc.model.revisions.LocalRevisionModel;
 import org.wordpress.android.fluxc.model.revisions.RevisionModel;
 import org.wordpress.android.fluxc.network.rest.wpcom.post.PostRestClient;
 import org.wordpress.android.fluxc.network.xmlrpc.post.PostXMLRPCClient;
+import org.wordpress.android.fluxc.persistence.ListItemSummarySqlUtils;
 import org.wordpress.android.fluxc.persistence.PostSqlUtils;
 import org.wordpress.android.fluxc.persistence.WellSqlConfig;
 import org.wordpress.android.fluxc.store.PostStore;
@@ -41,7 +42,7 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(RobolectricTestRunner.class)
 public class PostStoreUnitTest {
     private PostStore mPostStore = new PostStore(new Dispatcher(), Mockito.mock(PostRestClient.class),
-            Mockito.mock(PostXMLRPCClient.class));
+            Mockito.mock(PostXMLRPCClient.class), Mockito.mock(ListItemSummarySqlUtils.class));
 
     @Before
     public void setUp() {

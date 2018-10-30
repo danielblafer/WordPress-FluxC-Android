@@ -17,6 +17,7 @@ import org.wordpress.android.fluxc.model.PostModel;
 import org.wordpress.android.fluxc.model.PostUploadModel;
 import org.wordpress.android.fluxc.network.rest.wpcom.post.PostRestClient;
 import org.wordpress.android.fluxc.network.xmlrpc.post.PostXMLRPCClient;
+import org.wordpress.android.fluxc.persistence.ListItemSummarySqlUtils;
 import org.wordpress.android.fluxc.persistence.MediaSqlUtils;
 import org.wordpress.android.fluxc.persistence.PostSqlUtils;
 import org.wordpress.android.fluxc.persistence.UploadSqlUtils;
@@ -42,7 +43,7 @@ public class UploadStoreUnitTest {
     private Dispatcher mDispatcher = new Dispatcher();
     private UploadStore mUploadStore = new UploadStore(mDispatcher);
     private PostStore mPostStore = new PostStore(mDispatcher, Mockito.mock(PostRestClient.class),
-            Mockito.mock(PostXMLRPCClient.class));
+            Mockito.mock(PostXMLRPCClient.class), Mockito.mock(ListItemSummarySqlUtils.class));
 
     @Before
     public void setUp() {

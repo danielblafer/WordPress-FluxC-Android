@@ -99,7 +99,7 @@ public class PostRestClient extends BaseWPComRestClient {
     public void fetchPostList(final PostListDescriptorForRestSite listDescriptor, final int offset) {
         String url = WPCOMREST.sites.site(listDescriptor.getSite().getSiteId()).posts.getUrlV1_1();
 
-        String fields = TextUtils.join(",", Arrays.asList("ID", "modified"));
+        String fields = TextUtils.join(",", Arrays.asList("ID", "modified", "date", "title"));
         Map<String, String> params = createFetchPostListParameters(false, offset, listDescriptor.getPageSize(),
                 listDescriptor.getStatusList(), fields, listDescriptor.getOrder().getValue(),
                 listDescriptor.getOrderBy().getValue(), listDescriptor.getSearchQuery());
@@ -113,7 +113,8 @@ public class PostRestClient extends BaseWPComRestClient {
                     public void onResponse(PostsResponse response) {
                         List<PostListItem> postListItems = new ArrayList<>(response.posts.size());
                         for (PostWPComRestResponse postResponse : response.posts) {
-                            postListItems.add(new PostListItem(postResponse.ID, postResponse.modified));
+                            postListItems
+                                    .add(new PostListItem(postResponse.ID, postResponse.modified, postResponse.title));
                         }
                         boolean canLoadMore = postListItems.size() == listDescriptor.getPageSize();
                         FetchPostListResponsePayload responsePayload =
