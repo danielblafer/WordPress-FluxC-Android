@@ -8,9 +8,9 @@ import org.wordpress.android.fluxc.store.ListStore.FetchListPayload
 /**
  * A sealed class to make it easier to manage local and remote items together.
  */
-sealed class ListManagerItem<T>(val value: T?) {
-    class LocalItem<T>(value: T) : ListManagerItem<T>(value)
-    class RemoteItem<T>(val remoteItemId: Long, value: T?) : ListManagerItem<T>(value)
+sealed class ListManagerItem<T, S>(val value: T?, val summary: S?) {
+    class LocalItem<T, S>(value: T, summary: S?) : ListManagerItem<T, S>(value, summary)
+    class RemoteItem<T, S>(val remoteItemId: Long, value: T?, summary: S?) : ListManagerItem<T, S>(value, summary)
 }
 
 /**
@@ -32,10 +32,10 @@ sealed class ListManagerItem<T>(val value: T?) {
  * @property size The number of items in the list
  *
  */
-class ListManager<T>(
+class ListManager<T, S>(
     private val dispatcher: Dispatcher,
     private val listDescriptor: ListDescriptor,
-    private val items: List<ListManagerItem<T>>,
+    private val items: List<ListManagerItem<T, S>>,
     private val loadMoreOffset: Int,
     val isFetchingFirstPage: Boolean,
     val isLoadingMore: Boolean,
@@ -86,6 +86,10 @@ class ListManager<T>(
      */
     fun getRemoteItemId(position: Int): Long? {
         return (items[position] as? RemoteItem)?.remoteItemId
+    }
+
+    fun getSummary(position: Int): S? {
+        return items[position].summary
     }
 
     /**

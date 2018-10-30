@@ -21,7 +21,6 @@ import org.wordpress.android.fluxc.model.list.ListItemDataSource
 import org.wordpress.android.fluxc.model.list.ListItemModel
 import org.wordpress.android.fluxc.model.list.ListManager
 import org.wordpress.android.fluxc.model.list.ListManagerItem
-import org.wordpress.android.fluxc.model.list.ListManagerItem.LocalItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.RemoteItem
 import org.wordpress.android.fluxc.model.list.ListModel
 import org.wordpress.android.fluxc.model.list.ListState
@@ -84,11 +83,11 @@ class ListStore @Inject constructor(
      * @return An immutable list manager that exposes enough information about a list to be used by adapters. See
      * [ListManager] for more details.
      */
-    suspend fun <T> getListManager(
+    suspend fun <T, S> getListManager(
         listDescriptor: ListDescriptor,
-        dataSource: ListItemDataSource<T>,
+        dataSource: ListItemDataSource<T, S>,
         loadMoreOffset: Int = DEFAULT_LOAD_MORE_OFFSET
-    ): ListManager<T> = withContext(Dispatchers.Default) {
+    ): ListManager<T, S> = withContext(Dispatchers.Default) {
         val listModel = listSqlUtils.getList(listDescriptor)
         // Get the remote ids of items for the list from the DB
         val remoteIdsFromDb = if (listModel != null) {
@@ -105,10 +104,11 @@ class ListStore @Inject constructor(
 
         val listState = if (listModel != null) getListState(listModel) else null
         val listData = dataSource.getItems(listDescriptor, remoteIds)
+        val summaryData = dataSource.getItemSummary(listDescriptor, remoteIds)
         val localItems = dataSource.localItems(listDescriptor) ?: emptyList()
         // Add the local items and remote items in one list of `ListManagerItem`s
-        val allItems: List<ListManagerItem<T>> = localItems.asSequence().map { LocalItem(it) }
-                .plus(remoteIds.map { RemoteItem(it, listData[it]) }).toList()
+        val allItems: List<ListManagerItem<T, S>> = localItems.asSequence()
+                .plus(remoteIds.map { RemoteItem(it, listData[it], summaryData[it]) }).toList()
         return@withContext ListManager(
                 dispatcher = mDispatcher,
                 listDescriptor = listDescriptor,

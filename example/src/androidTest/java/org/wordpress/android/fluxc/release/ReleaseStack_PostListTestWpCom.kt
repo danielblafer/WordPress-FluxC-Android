@@ -12,6 +12,7 @@ class ReleaseStack_PostListTestWpCom : ReleaseStack_WPComBase() {
     override fun setUp() {
         super.setUp()
         mReleaseStackAppComponent.inject(this)
+        sSite = null
         init()
     }
 

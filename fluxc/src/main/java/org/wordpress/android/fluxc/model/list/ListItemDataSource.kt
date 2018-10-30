@@ -1,9 +1,11 @@
 package org.wordpress.android.fluxc.model.list
 
+import org.wordpress.android.fluxc.model.list.ListManagerItem.LocalItem
+
 /**
  * This is an interface used to tell how to fetch and get items for the specific model used in the list.
  */
-interface ListItemDataSource<T> {
+interface ListItemDataSource<T, S> {
     /**
      * Should fetch the item for the given [ListDescriptor] and [remoteItemId].
      */
@@ -20,9 +22,14 @@ interface ListItemDataSource<T> {
     fun getItems(listDescriptor: ListDescriptor, remoteItemIds: List<Long>): Map<Long, T>
 
     /**
+     * Should return the summary of the items available
+     */
+    fun getItemSummary(listDescriptor: ListDescriptor, remoteItemIds: List<Long>): Map<Long, S>
+
+    /**
      * Optional function to return the ordered local items to be shown at the top of the list
      */
-    fun localItems(listDescriptor: ListDescriptor): List<T>? = null
+    fun localItems(listDescriptor: ListDescriptor): List<LocalItem<T, S>>? = null
 
     /**
      * Optional function to return list of remote items ids that must be included in the list. If they are not in the

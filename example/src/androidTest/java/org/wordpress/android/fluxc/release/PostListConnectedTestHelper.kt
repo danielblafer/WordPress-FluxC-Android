@@ -5,6 +5,7 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.TestUtils
@@ -14,6 +15,7 @@ import org.wordpress.android.fluxc.model.list.ListDescriptor
 import org.wordpress.android.fluxc.model.list.ListItemDataSource
 import org.wordpress.android.fluxc.model.list.ListManager
 import org.wordpress.android.fluxc.model.list.PostListDescriptor
+import org.wordpress.android.fluxc.model.list.PostSummaryModel
 import org.wordpress.android.fluxc.store.ListStore
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged.CauseOfListChange.FIRST_PAGE_FETCHED
@@ -62,8 +64,8 @@ class PostListConnectedTestHelper(
 
     private fun fetchFirstPageAndAssert(
         postListDescriptor: PostListDescriptor,
-        dataSource: ListItemDataSource<PostModel>
-    ): ListManager<PostModel> {
+        dataSource: ListItemDataSource<PostModel, PostSummaryModel>
+    ): ListManager<PostModel, PostSummaryModel> {
         // Get the initial ListManager from ListStore and assert that everything is as expected
         val listManagerBefore = runBlocking {
             listStore.getListManager(postListDescriptor, dataSource)
@@ -93,6 +95,7 @@ class PostListConnectedTestHelper(
         assertFalse("List shouldn't be empty after fetch", listManagerAfter.size == 0)
         assertFalse("List shouldn't be fetching first page anymore", listManagerAfter.isFetchingFirstPage)
         assertFalse("List shouldn't be loading more data anymore", listManagerAfter.isLoadingMore)
+        assertPostSummaries(listManagerAfter)
         return listManagerAfter
     }
 
@@ -134,6 +137,7 @@ class PostListConnectedTestHelper(
         val listManagerAfter = runBlocking {
             listStore.getListManager(postListDescriptor, dataSource)
         }
+        assertPostSummaries(listManagerAfter)
         assertTrue("More data should be loaded after loadMore", listManagerAfter.size > listManagerBefore.size)
         assertFalse("List shouldn't be fetching first page anymore", listManagerAfter.isFetchingFirstPage)
         assertFalse("List shouldn't be loading more data anymore", listManagerAfter.isLoadingMore)
@@ -163,8 +167,10 @@ class PostListConnectedTestHelper(
         countDownLatch.countDown()
     }
 
-    private fun listItemDataSource(fetchList: (ListDescriptor, Int) -> Unit): ListItemDataSource<PostModel> =
-            object : ListItemDataSource<PostModel> {
+    private fun listItemDataSource(
+        fetchList: (ListDescriptor, Int) -> Unit
+    ): ListItemDataSource<PostModel, PostSummaryModel> =
+            object : ListItemDataSource<PostModel, PostSummaryModel> {
                 override fun fetchItem(listDescriptor: ListDescriptor, remoteItemId: Long) {
                 }
 
@@ -175,5 +181,26 @@ class PostListConnectedTestHelper(
                 override fun getItems(listDescriptor: ListDescriptor, remoteItemIds: List<Long>): Map<Long, PostModel> {
                     return emptyMap()
                 }
+
+                override fun getItemSummary(
+                    listDescriptor: ListDescriptor,
+                    remoteItemIds: List<Long>
+                ): Map<Long, PostSummaryModel> {
+                    assert(listDescriptor is PostListDescriptor)
+                    return postStore.getPostSummariesByRemotePostIds(
+                            remoteItemIds,
+                            (listDescriptor as PostListDescriptor).site
+                    )
+                }
             }
+
+    /**
+     * Helper function that assert that all posts have summaries inserted in the DB
+     */
+    private fun assertPostSummaries(listManager: ListManager<PostModel, PostSummaryModel>) {
+        for (i in 0..(listManager.size - 1)) {
+            val summary = listManager.getSummary(i)
+            assertNotNull("All post summaries must be inserted in the DB", summary)
+        }
+    }
 }

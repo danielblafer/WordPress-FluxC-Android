@@ -6,11 +6,13 @@ import org.wordpress.android.fluxc.model.list.PostListDescriptor
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForXmlRpcSite
 import org.wordpress.android.fluxc.model.list.PostListOrderBy
 import org.wordpress.android.fluxc.model.post.PostStatus
+import org.wordpress.android.fluxc.persistence.SiteSqlUtils
 
 class ReleaseStack_PostListTestXMLRPC : ReleaseStack_XMLRPCBase() {
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
+        SiteSqlUtils.insertOrUpdateSite(sSite)
         mReleaseStackAppComponent.inject(this)
     }
 

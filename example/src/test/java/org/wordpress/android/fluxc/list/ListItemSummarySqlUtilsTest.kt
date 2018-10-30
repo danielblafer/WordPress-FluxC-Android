@@ -52,4 +52,3 @@ class ListItemSummarySqlUtilsTest {
         return site
     }
 }
-

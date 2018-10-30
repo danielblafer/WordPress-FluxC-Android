@@ -24,6 +24,7 @@ import org.wordpress.android.fluxc.model.list.ListManagerItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.LocalItem
 import org.wordpress.android.fluxc.model.list.ListManagerItem.RemoteItem
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForRestSite
+import org.wordpress.android.fluxc.model.list.PostSummaryModel
 import org.wordpress.android.fluxc.store.ListStore.FetchListPayload
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -261,7 +262,7 @@ class ListManagerTest {
      */
     @Test
     fun testGetLocalItem() {
-        val localItems = listOf(LocalItem("localItem1"), LocalItem("localItem2"))
+        val localItems = listOf(LocalItem("localItem1", "summary1"), LocalItem("localItem2", "summary2"))
         val fetchList = { _: ListDescriptor, _: Int -> }
         val listManager = ListManager(
                 dispatcher = dispatcher,
@@ -284,7 +285,7 @@ class ListManagerTest {
      */
     @Test
     fun testFindIndexedNotNull() {
-        val items = listOf(LocalItem("localItem"), RemoteItem(123L, "remoteItem"))
+        val items = listOf(LocalItem("localItem", "localSummary"), RemoteItem(123L, "remoteItem", "remoteSummary"))
         val fetchList = { _: ListDescriptor, _: Int -> }
         val listManager = ListManager(
                 dispatcher = dispatcher,
@@ -314,14 +315,15 @@ class ListManagerTest {
         indexToGet: Int,
         remoteItemId: Long,
         remoteItem: PostModel?,
+        remoteItemSummary: PostSummaryModel? = null,
         fetchItem: ((Long) -> Unit)? = null,
         fetchList: ((ListDescriptor, Int) -> Unit)? = null
-    ): ListManager<PostModel> {
-        val listItems: List<ListManagerItem<PostModel>> = mock()
+    ): ListManager<PostModel, PostSummaryModel> {
+        val listItems: List<ListManagerItem<PostModel, PostSummaryModel>> = mock()
         val listItemModel = ListItemModel()
         listItemModel.remoteItemId = remoteItemId
         whenever(listItems.size).thenReturn(numberOfItems)
-        whenever(listItems[indexToGet]).thenReturn(RemoteItem(remoteItemId, remoteItem))
+        whenever(listItems[indexToGet]).thenReturn(RemoteItem(remoteItemId, remoteItem, remoteItemSummary))
         val fetchItemFunction = fetchItem ?: {}
         val fetchListFunction = fetchList ?: { _: ListDescriptor, _: Int -> }
         val listManager = ListManager(
