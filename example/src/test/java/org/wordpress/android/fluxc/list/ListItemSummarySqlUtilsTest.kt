@@ -32,6 +32,10 @@ class ListItemSummarySqlUtilsTest {
         val site = insertTestSite()
         val remotePostIds = (1..100L).toList()
         val postSummaryList = remotePostIds.map { PostSummaryModel(site.id, it, "") }
+        /**
+         * 1. Insert 100 post summaries in DB
+         * 2. Verify that they were inserted correctly
+         */
         listItemSummarySqlUtils.insertPostSummaryList(postSummaryList)
         val map = listItemSummarySqlUtils.getPostSummariesByRemotePostIds(remotePostIds, site.id)
         assertEquals(remotePostIds.size, map.size, "Not all summaries were inserted correctly")

@@ -95,7 +95,7 @@ class PostListConnectedTestHelper(
         assertFalse("List shouldn't be empty after fetch", listManagerAfter.size == 0)
         assertFalse("List shouldn't be fetching first page anymore", listManagerAfter.isFetchingFirstPage)
         assertFalse("List shouldn't be loading more data anymore", listManagerAfter.isLoadingMore)
-        assertPostSummaries(listManagerAfter)
+        assertPostSummaryList(listManagerAfter)
         return listManagerAfter
     }
 
@@ -137,7 +137,7 @@ class PostListConnectedTestHelper(
         val listManagerAfter = runBlocking {
             listStore.getListManager(postListDescriptor, dataSource)
         }
-        assertPostSummaries(listManagerAfter)
+        assertPostSummaryList(listManagerAfter)
         assertTrue("More data should be loaded after loadMore", listManagerAfter.size > listManagerBefore.size)
         assertFalse("List shouldn't be fetching first page anymore", listManagerAfter.isFetchingFirstPage)
         assertFalse("List shouldn't be loading more data anymore", listManagerAfter.isLoadingMore)
@@ -197,7 +197,7 @@ class PostListConnectedTestHelper(
     /**
      * Helper function that assert that all posts have summaries inserted in the DB
      */
-    private fun assertPostSummaries(listManager: ListManager<PostModel, PostSummaryModel>) {
+    private fun assertPostSummaryList(listManager: ListManager<PostModel, PostSummaryModel>) {
         for (i in 0..(listManager.size - 1)) {
             val summary = listManager.getSummary(i)
             assertNotNull("All post summaries must be inserted in the DB", summary)

@@ -12,6 +12,7 @@ class ReleaseStack_PostListTestXMLRPC : ReleaseStack_XMLRPCBase() {
     @Throws(Exception::class)
     override fun setUp() {
         super.setUp()
+        // Due to foreign key constraint in PostSummaryModel, insert the site in the DB
         SiteSqlUtils.insertOrUpdateSite(sSite)
         mReleaseStackAppComponent.inject(this)
     }
