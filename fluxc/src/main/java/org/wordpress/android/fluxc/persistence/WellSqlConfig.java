@@ -43,7 +43,7 @@ public class WellSqlConfig extends DefaultWellConfig {
 
     @Override
     public int getDbVersion() {
-        return 44;
+        return 45;
     }
 
     @Override
@@ -370,6 +370,12 @@ public class WellSqlConfig extends DefaultWellConfig {
                            + "AUTOINCREMENT,FOREIGN KEY(LIST_ID) REFERENCES ListModel(_id) ON DELETE CASCADE,"
                            + "UNIQUE(LIST_ID, REMOTE_ITEM_ID) ON CONFLICT IGNORE)");
                 db.execSQL("ALTER TABLE PostModel ADD LAST_MODIFIED TEXT");
+                oldVersion++;
+            case 44:
+                AppLog.d(T.DB, "Migrating to version " + (oldVersion + 1));
+                db.execSQL("CREATE TABLE PostSummaryModel (LOCAL_SITE_ID INTEGER,REMOTE_POST_ID INTEGER,TITLE TEXT,"
+                           + "_id INTEGER PRIMARY KEY AUTOINCREMENT,FOREIGN KEY(LOCAL_SITE_ID) REFERENCES "
+                           + "SiteModel(_id) ON DELETE CASCADE,UNIQUE (REMOTE_POST_ID) ON CONFLICT REPLACE)");
                 oldVersion++;
         }
         db.setTransactionSuccessful();
