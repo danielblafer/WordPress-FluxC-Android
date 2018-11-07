@@ -5,9 +5,6 @@ import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.OnLifecycleEvent
 import android.arch.paging.DataSource
 import android.arch.paging.PositionalDataSource
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.launch
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.wordpress.android.fluxc.Dispatcher
@@ -68,27 +65,23 @@ private class PagedListPositionalDataSource<T, R>(
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<PagedListItemType<R>>) {
-        CoroutineScope(Dispatchers.Default).launch {
+        if (!isInvalid) {
             val startPosition = if (params.requestedStartPosition < remoteItemIds.size) {
                 params.requestedStartPosition
             } else 0
             val items = getItems(startPosition, params.requestedLoadSize)
-            if (!isInvalid) {
-                if (params.placeholdersEnabled) {
-                    callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
-                } else {
-                    callback.onResult(items, startPosition)
-                }
+            if (params.placeholdersEnabled) {
+                callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
+            } else {
+                callback.onResult(items, startPosition)
             }
         }
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<PagedListItemType<R>>) {
-        CoroutineScope(Dispatchers.Default).launch {
+        if (!isInvalid) {
             val items = getItems(params.startPosition, params.loadSize)
-            if (!isInvalid) {
-                callback.onResult(items)
-            }
+            callback.onResult(items)
         }
     }
 
