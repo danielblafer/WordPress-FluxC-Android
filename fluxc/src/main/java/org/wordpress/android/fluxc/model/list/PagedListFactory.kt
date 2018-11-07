@@ -5,6 +5,11 @@ import android.arch.lifecycle.LifecycleObserver
 import android.arch.lifecycle.OnLifecycleEvent
 import android.arch.paging.DataSource
 import android.arch.paging.PositionalDataSource
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.GlobalScope
+import kotlinx.coroutines.experimental.android.Main
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.withContext
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.wordpress.android.fluxc.Dispatcher
@@ -13,6 +18,7 @@ import org.wordpress.android.fluxc.model.list.PagedListItemType.ReadyItem
 import org.wordpress.android.fluxc.model.list.datastore.ListDataStoreInterface
 import org.wordpress.android.fluxc.store.ListStore.OnListChanged
 import org.wordpress.android.fluxc.store.ListStore.OnListItemsChanged
+import org.wordpress.android.util.AppLog
 
 class PagedListFactory<T, R>(
     private val dispatcher: Dispatcher,
@@ -65,44 +71,56 @@ private class PagedListPositionalDataSource<T, R>(
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<PagedListItemType<R>>) {
-        if (!isInvalid) {
+        GlobalScope.launch(Dispatchers.Main) {
             val startPosition = if (params.requestedStartPosition < remoteItemIds.size) {
                 params.requestedStartPosition
             } else 0
             val items = getItems(startPosition, params.requestedLoadSize)
-            if (params.placeholdersEnabled) {
-                callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
+            if (!isInvalid) {
+                if (params.placeholdersEnabled) {
+                    callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
+                } else {
+                    callback.onResult(items, startPosition)
+                }
             } else {
-                callback.onResult(items, startPosition)
+                AppLog.e(AppLog.T.UTILS, "Invalid during loadInitial")
             }
         }
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<PagedListItemType<R>>) {
-        if (!isInvalid) {
+        GlobalScope.launch(Dispatchers.Main) {
             val items = getItems(params.startPosition, params.loadSize)
-            callback.onResult(items)
+            if (!isInvalid) {
+                callback.onResult(items)
+            } else {
+                AppLog.e(AppLog.T.UTILS, "Loadrange is invalid!")
+            }
         }
     }
 
-    private fun getItems(startPosition: Int, loadSize: Int): List<PagedListItemType<R>> {
+    private suspend fun getItems(
+        startPosition: Int,
+        loadSize: Int
+    ): List<PagedListItemType<R>> = withContext(Dispatchers.Default) {
         val normalizedStart = normalizedIndex(startPosition)
         val normalizedEnd = normalizedIndex(normalizedStart + loadSize)
         if (normalizedStart == normalizedEnd) {
-            return emptyList()
-        }
-        return (normalizedStart..(normalizedEnd - 1)).map { index ->
-            if (index < localItems.size) {
-                return@map ReadyItem(transform(localItems[index]))
-            }
-            val remoteIndex = index - localItems.size
-            val remoteItemId = remoteItemIds[remoteIndex]
-            val item = dataStore.getItemByRemoteId(listDescriptor, remoteItemId)
-            if (item == null) {
-                dataStore.fetchItem(listDescriptor, remoteItemId)
-                LoadingItem<R>(remoteItemId)
-            } else {
-                ReadyItem(transform(item))
+            emptyList()
+        } else {
+            (normalizedStart..(normalizedEnd - 1)).map { index ->
+                if (index < localItems.size) {
+                    return@map ReadyItem(transform(localItems[index]))
+                }
+                val remoteIndex = index - localItems.size
+                val remoteItemId = remoteItemIds[remoteIndex]
+                val item = dataStore.getItemByRemoteId(listDescriptor, remoteItemId)
+                if (item == null) {
+                    dataStore.fetchItem(listDescriptor, remoteItemId)
+                    LoadingItem<R>(remoteItemId)
+                } else {
+                    ReadyItem(transform(item))
+                }
             }
         }
     }
