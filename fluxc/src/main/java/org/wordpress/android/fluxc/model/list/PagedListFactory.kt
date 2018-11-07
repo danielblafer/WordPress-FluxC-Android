@@ -68,21 +68,27 @@ private class PagedListPositionalDataSource<T, R>(
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<PagedListItemType<R>>) {
-        val startPosition = if (params.requestedStartPosition < remoteItemIds.size) {
-            params.requestedStartPosition
-        } else 0
-        val items = getItems(startPosition, params.requestedLoadSize)
-        if (params.placeholdersEnabled) {
-            callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
-        } else {
-            callback.onResult(items, startPosition)
+        CoroutineScope(Dispatchers.Default).launch {
+            val startPosition = if (params.requestedStartPosition < remoteItemIds.size) {
+                params.requestedStartPosition
+            } else 0
+            val items = getItems(startPosition, params.requestedLoadSize)
+            if (!isInvalid) {
+                if (params.placeholdersEnabled) {
+                    callback.onResult(items, startPosition, remoteItemIds.size + localItems.size)
+                } else {
+                    callback.onResult(items, startPosition)
+                }
+            }
         }
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<PagedListItemType<R>>) {
         CoroutineScope(Dispatchers.Default).launch {
             val items = getItems(params.startPosition, params.loadSize)
-            callback.onResult(items)
+            if (!isInvalid) {
+                callback.onResult(items)
+            }
         }
     }
 
