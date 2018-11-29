@@ -40,7 +40,7 @@ class WCStatsStore @Inject constructor(
     }
 
     enum class StatsGranularity {
-        DAYS, WEEKS, MONTHS, YEARS;
+        DAYS, WEEKS, MONTHS, YEARS, CUSTOM;
 
         companion object {
             fun fromOrderStatsApiUnit(apiUnit: OrderStatsApiUnit): StatsGranularity {
@@ -49,6 +49,7 @@ class WCStatsStore @Inject constructor(
                     OrderStatsApiUnit.WEEK -> StatsGranularity.WEEKS
                     OrderStatsApiUnit.MONTH -> StatsGranularity.MONTHS
                     OrderStatsApiUnit.YEAR -> StatsGranularity.YEARS
+                    OrderStatsApiUnit.CUSTOM -> StatsGranularity.CUSTOM
                 }
             }
         }
@@ -70,7 +71,8 @@ class WCStatsStore @Inject constructor(
     class FetchOrderStatsPayload(
         val site: SiteModel,
         val granularity: StatsGranularity,
-        val forced: Boolean = false
+        val forced: Boolean = false,
+        val customRange: StatsCustomRange = StatsCustomRange()
     ) : Payload<BaseNetworkError>()
 
     class FetchOrderStatsResponsePayload(
@@ -93,7 +95,8 @@ class WCStatsStore @Inject constructor(
     class FetchVisitorStatsPayload(
         val site: SiteModel,
         val granularity: StatsGranularity,
-        val forced: Boolean = false
+        val forced: Boolean = false,
+        val customRange: StatsCustomRange
     ) : Payload<BaseNetworkError>()
 
     class FetchVisitorStatsResponsePayload(
@@ -110,7 +113,8 @@ class WCStatsStore @Inject constructor(
         val site: SiteModel,
         val granularity: StatsGranularity,
         val limit: Int = 10,
-        val forced: Boolean = false
+        val forced: Boolean = false,
+        val customRange: StatsCustomRange
     ) : Payload<BaseNetworkError>()
 
     class FetchTopEarnersStatsResponsePayload(
@@ -183,8 +187,8 @@ class WCStatsStore @Inject constructor(
      * [StatsGranularity.MONTHS]: "2018-05"
      * [StatsGranularity.YEARS]: "2018"
      */
-    fun getRevenueStats(site: SiteModel, granularity: StatsGranularity): Map<String, Double> {
-        return getStatsForField(site, OrderStatsField.TOTAL_SALES, granularity)
+    fun getRevenueStats(site: SiteModel, granularity: StatsGranularity, customRange: StatsCustomRange): Map<String, Double> {
+        return getStatsForField(site, OrderStatsField.TOTAL_SALES, granularity, customRange)
     }
 
     /**
@@ -194,8 +198,8 @@ class WCStatsStore @Inject constructor(
      *
      * See [getRevenueStats] for detail on the date formatting of the map keys.
      */
-    fun getOrderStats(site: SiteModel, granularity: StatsGranularity): Map<String, Int> {
-        return getStatsForField(site, OrderStatsField.ORDERS, granularity)
+    fun getOrderStats(site: SiteModel, granularity: StatsGranularity, customRange: StatsCustomRange): Map<String, Int> {
+        return getStatsForField(site, OrderStatsField.ORDERS, granularity, customRange)
     }
 
     /**
@@ -219,7 +223,7 @@ class WCStatsStore @Inject constructor(
     /**
      * returns the quantity (how far back to go) to use when requesting stats for a specific granularity
      */
-    private fun getQuantityForGranularity(site: SiteModel, granularity: StatsGranularity): Int {
+    private fun getQuantityForGranularity(site: SiteModel, granularity: StatsGranularity, customRange: StatsCustomRange): Int {
         return when (granularity) {
             StatsGranularity.DAYS -> STATS_QUANTITY_DAYS
             StatsGranularity.WEEKS -> STATS_QUANTITY_WEEKS
@@ -228,20 +232,23 @@ class WCStatsStore @Inject constructor(
                 // Years since 2011 (WooCommerce initial release), inclusive
                 SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR).toInt() - 2011 + 1
             }
+            StatsGranularity.CUSTOM -> {
+                customRange.quantityBetweenTwoDates
+            }
         }
     }
 
     private fun fetchOrderStats(payload: FetchOrderStatsPayload) {
-        val quantity = getQuantityForGranularity(payload.site, payload.granularity)
-        wcOrderStatsClient.fetchStats(payload.site, OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
+        val quantity = getQuantityForGranularity(payload.site, payload.granularity, payload.customRange)
+        wcOrderStatsClient.fetchStats(payload.site, OrderStatsApiUnit.fromStatsGranularity(payload.granularity, payload.customRange),
                 getFormattedDate(payload.site, payload.granularity), quantity, payload.forced)
     }
 
     private fun fetchVisitorStats(payload: FetchVisitorStatsPayload) {
-        val quantity = getQuantityForGranularity(payload.site, payload.granularity)
+        val quantity = getQuantityForGranularity(payload.site, payload.granularity, payload.customRange)
         wcOrderStatsClient.fetchVisitorStats(
                 payload.site,
-                OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
+                OrderStatsApiUnit.fromStatsGranularity(payload.granularity, payload.customRange),
                 getFormattedDate(payload.site, payload.granularity),
                 quantity,
                 payload.forced)
@@ -250,7 +257,7 @@ class WCStatsStore @Inject constructor(
     private fun fetchTopEarnersStats(payload: FetchTopEarnersStatsPayload) {
         wcOrderStatsClient.fetchTopEarnersStats(
                 payload.site,
-                OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
+                OrderStatsApiUnit.fromStatsGranularity(payload.granularity, payload.customRange),
                 getFormattedDate(payload.site, payload.granularity),
                 payload.limit,
                 payload.forced
@@ -292,12 +299,16 @@ class WCStatsStore @Inject constructor(
         emitChange(onTopEarnersChanged)
     }
 
+    /**
+     * The safest way to pass a custom date would be a "Full Date", that is to say a Year-Month-Day
+     */
     private fun getFormattedDate(site: SiteModel, granularity: StatsGranularity): String {
         return when (granularity) {
             StatsGranularity.DAYS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY)
             StatsGranularity.WEEKS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_WEEK)
             StatsGranularity.MONTHS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_MONTH)
             StatsGranularity.YEARS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR)
+            StatsGranularity.CUSTOM -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY)
         }
     }
 
@@ -307,9 +318,10 @@ class WCStatsStore @Inject constructor(
     private fun <T> getStatsForField(
         site: SiteModel,
         field: OrderStatsField,
-        granularity: StatsGranularity
+        granularity: StatsGranularity,
+        customRange: StatsCustomRange
     ): Map<String, T> {
-        val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity)
+        val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity, customRange)
         val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit)
         rawStats?.let {
             val periodIndex = it.getIndexForField(OrderStatsField.PERIOD)

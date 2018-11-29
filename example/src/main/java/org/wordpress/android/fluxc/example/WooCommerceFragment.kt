@@ -28,6 +28,7 @@ import org.wordpress.android.fluxc.model.WCOrderModel
 import org.wordpress.android.fluxc.model.WCOrderNoteModel
 import org.wordpress.android.fluxc.model.order.OrderIdentifier
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.CoreOrderStatus
+import org.wordpress.android.fluxc.store.StatsCustomRange
 import org.wordpress.android.fluxc.store.WCOrderStore
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchHasOrdersPayload
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchOrderNotesPayload
@@ -232,35 +233,35 @@ class WooCommerceFragment : Fragment() {
 
         fetch_order_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS, true)
+                val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS, true, StatsCustomRange(false))
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_visitor_stats.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, false)
+                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, false, StatsCustomRange(false))
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchVisitorStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_visitor_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, true)
+                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, true, StatsCustomRange(false))
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchVisitorStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_top_earners_stats.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, false)
+                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, false, StatsCustomRange(false))
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_top_earners_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, true)
+                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, true, StatsCustomRange(false))
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
@@ -396,7 +397,7 @@ class WooCommerceFragment : Fragment() {
         val site = getFirstWCSite()
         when (event.causeOfChange) {
             WCStatsAction.FETCH_ORDER_STATS -> {
-                val statsMap = wcStatsStore.getRevenueStats(site!!, event.granularity)
+                val statsMap = wcStatsStore.getRevenueStats(site!!, event.granularity, StatsCustomRange(true))
                 if (statsMap.isEmpty()) {
                     prependToLog("No stats were stored for site " + site.name + " =(")
                 } else {

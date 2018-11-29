@@ -15,6 +15,7 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
+import org.wordpress.android.fluxc.store.StatsCustomRange
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
@@ -34,15 +35,16 @@ class OrderStatsRestClient(
     userAgent: UserAgent
 ) : BaseWPComRestClient(appContext, dispatcher, requestQueue, accessToken, userAgent) {
     enum class OrderStatsApiUnit {
-        DAY, WEEK, MONTH, YEAR;
+        DAY, WEEK, MONTH, YEAR, CUSTOM;
 
         companion object {
-            fun fromStatsGranularity(granularity: StatsGranularity): OrderStatsApiUnit {
+            fun fromStatsGranularity(granularity: StatsGranularity, customRange: StatsCustomRange): OrderStatsApiUnit {
                 return when (granularity) {
                     StatsGranularity.DAYS -> DAY
                     StatsGranularity.WEEKS -> WEEK
                     StatsGranularity.MONTHS -> MONTH
                     StatsGranularity.YEARS -> YEAR
+                    StatsGranularity.CUSTOM -> CUSTOM
                 }
             }
         }
