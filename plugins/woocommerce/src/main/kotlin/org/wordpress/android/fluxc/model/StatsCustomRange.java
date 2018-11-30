@@ -1,4 +1,4 @@
-package org.wordpress.android.fluxc.store;
+package org.wordpress.android.fluxc.model;
 
 import org.joda.time.DateTime;
 import org.joda.time.Days;
@@ -6,7 +6,8 @@ import org.joda.time.Months;
 import org.joda.time.Years;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.wordpress.android.fluxc.network.utils.StatsGranularity;
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit;
+import org.wordpress.android.fluxc.store.WCStatsStore;
 
 //TODO: Unit Test
 public class StatsCustomRange {
@@ -14,10 +15,10 @@ public class StatsCustomRange {
     //  reduces boiler plate code so much.
     private DateTime mStartDate;
     private DateTime mEndDate;
-    private Enum<StatsGranularity> mGranularity;
+    private OrderStatsApiUnit mGranularity;
 
     public StatsCustomRange(DateTime startDate, DateTime endDate,
-                            Enum<StatsGranularity> granularity) {
+                            OrderStatsApiUnit granularity) {
         mStartDate = startDate;
         mEndDate = endDate;
         mGranularity = granularity;
@@ -30,11 +31,11 @@ public class StatsCustomRange {
             mEndDate = null;
             mGranularity = null;
         } else {
-            DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+            DateTimeFormatter formatter = DateTimeFormat.forPattern(WCStatsStore.DATE_FORMAT_DAY);
 
             mStartDate = formatter.parseDateTime("2018-09-18");
             mEndDate = formatter.parseDateTime("2018-11-28");
-            mGranularity = StatsGranularity.DAYS;
+            mGranularity = OrderStatsApiUnit.YEAR;
         }
     }
 
@@ -44,15 +45,19 @@ public class StatsCustomRange {
         mGranularity = null;
     }
 
-    public DateTime getStartDate() {
-        return mStartDate;
+    public String getStartDate() {
+        DateTimeFormatter formatter = DateTimeFormat.forPattern(WCStatsStore.DATE_FORMAT_DAY);
+        String fullDate = formatter.print(mStartDate);
+        return clipDateBasedOnGranularity(fullDate);
     }
 
-    public DateTime getEndDate() {
-        return mEndDate;
+    public String getEndDate() {
+        DateTimeFormatter formatter = DateTimeFormat.forPattern(WCStatsStore.DATE_FORMAT_DAY);
+        String fullDate = formatter.print(mEndDate);
+        return clipDateBasedOnGranularity(fullDate);
     }
 
-    public Enum<StatsGranularity> getGranularity() {
+    public OrderStatsApiUnit getGranularity() {
         return mGranularity;
     }
 
@@ -64,7 +69,7 @@ public class StatsCustomRange {
         mEndDate = endDate;
     }
 
-    public void setGranularity(Enum<StatsGranularity> granularity) {
+    public void setGranularity(OrderStatsApiUnit granularity) {
         mGranularity = granularity;
     }
 
@@ -72,12 +77,12 @@ public class StatsCustomRange {
         checkForSwitchedDates();
         checkForOvershotDates();
 
-        if (this.mGranularity == StatsGranularity.DAYS) {
-            return Days.daysBetween(this.mEndDate, this.mStartDate).getDays();
-        } else if (this.mGranularity == StatsGranularity.MONTHS) {
-            return Months.monthsBetween(this.mEndDate, this.mStartDate).getMonths();
-        } else if (this.mGranularity == StatsGranularity.YEARS) {
-            return Years.yearsBetween(this.mEndDate, this.mStartDate).getYears();
+        if (this.mGranularity == OrderStatsApiUnit.DAY) {
+            return Days.daysBetween(this.mStartDate, this.mEndDate).getDays();
+        } else if (this.mGranularity == OrderStatsApiUnit.MONTH) {
+            return Months.monthsBetween(this.mStartDate, this.mEndDate).getMonths();
+        } else if (this.mGranularity == OrderStatsApiUnit.YEAR) {
+            return Years.yearsBetween(this.mStartDate, this.mEndDate).getYears();
         } else return 0;
     }
 
@@ -94,5 +99,13 @@ public class StatsCustomRange {
             this.mEndDate = this.mStartDate;
             this.mStartDate = tempEndDate;
         }
+    }
+
+    private String clipDateBasedOnGranularity(String fullDate) {
+        if (this.mGranularity == OrderStatsApiUnit.YEAR) {
+            return fullDate.substring(0, fullDate.length() - 6);
+        } else if (this.mGranularity == OrderStatsApiUnit.MONTH) {
+            return fullDate.substring(0, fullDate.length() - 3);
+        } else return fullDate;
     }
 }

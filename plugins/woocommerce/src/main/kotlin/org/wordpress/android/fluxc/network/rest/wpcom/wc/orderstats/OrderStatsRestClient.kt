@@ -15,12 +15,12 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
-import org.wordpress.android.fluxc.store.StatsCustomRange
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsError
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
+import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.NO_FIELDS_AVAILABLE
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
@@ -35,16 +35,17 @@ class OrderStatsRestClient(
     userAgent: UserAgent
 ) : BaseWPComRestClient(appContext, dispatcher, requestQueue, accessToken, userAgent) {
     enum class OrderStatsApiUnit {
-        DAY, WEEK, MONTH, YEAR, CUSTOM;
+        DAY, WEEK, MONTH, YEAR, DEFAULT;
 
         companion object {
-            fun fromStatsGranularity(granularity: StatsGranularity, customRange: StatsCustomRange): OrderStatsApiUnit {
+            fun fromStatsGranularity(granularity: StatsGranularity, customRangeGranularity: OrderStatsApiUnit)
+                    : OrderStatsApiUnit {
                 return when (granularity) {
                     StatsGranularity.DAYS -> DAY
                     StatsGranularity.WEEKS -> WEEK
                     StatsGranularity.MONTHS -> MONTH
                     StatsGranularity.YEARS -> YEAR
-                    StatsGranularity.CUSTOM -> CUSTOM
+                    StatsGranularity.CUSTOM -> customRangeGranularity
                 }
             }
         }
@@ -74,14 +75,28 @@ class OrderStatsRestClient(
 
         val request = WPComGsonRequest.buildGetRequest(url, params, OrderStatsApiResponse::class.java,
                 { apiResponse ->
+                    var noData = false
                     val model = WCOrderStatsModel().apply {
                         this.localSiteId = site.id
                         this.unit = unit.toString()
-                        this.fields = apiResponse.fields.toString()
-                        this.data = apiResponse.data.toString()
+
+                        try {
+                            this.fields = apiResponse.fields.toString()
+                            this.data = apiResponse.data.toString()
+                        }
+                        catch (e: NullPointerException) {
+                            noData = true
+                        }
                     }
-                    val payload = FetchOrderStatsResponsePayload(site, unit, model)
-                    mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
+
+                    if(noData){
+                        val orderStatsError = OrderStatsError(NO_FIELDS_AVAILABLE, "No Data to Return")
+                        val payload = FetchOrderStatsResponsePayload(orderStatsError, site, unit)
+                        mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
+                    } else{
+                        val payload = FetchOrderStatsResponsePayload(site, unit, model)
+                        mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
+                    }
                 },
                 { networkError ->
                     val orderError = networkErrorToOrderError(networkError)
