@@ -132,28 +132,37 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertClipDateBasedOnGranularityYearDate() {
-        statsCustomRange.granularity =  OrderStatsApiUnit.YEAR
-        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR), "2018")
+        statsCustomRange.granularity = OrderStatsApiUnit.YEAR
+        Assert.assertEquals(
+                statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
+                "2018")
     }
 
     @Test
     fun assertClipDateBasedOnGranularityMonthDate() {
-        statsCustomRange.granularity =  OrderStatsApiUnit.MONTH
-        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR), "2018-09")
+        statsCustomRange.granularity = OrderStatsApiUnit.MONTH
+        Assert.assertEquals(
+                statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
+                "2018-09"
+        )
     }
 
     @Test
     fun assertClipDateBasedOnGranularityWeekDate() {
-        statsCustomRange.granularity =  OrderStatsApiUnit.WEEK
-        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR), "2018-W48")
+        statsCustomRange.granularity = OrderStatsApiUnit.WEEK
+        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(
+                START_DATE_STRING, WEEK_OF_THE_YEAR),
+                "2018-W48"
+        )
     }
 
     @Test
     fun assertClipDateBasedOnGranularityDayDate() {
-        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR), START_DATE_STRING)
+        Assert.assertEquals(
+                statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
+                START_DATE_STRING
+        )
     }
-
-
 
     companion object {
         private const val START_DATE_STRING = "2018-09-18"
