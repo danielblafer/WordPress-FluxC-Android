@@ -235,7 +235,12 @@ class WCStatsStore @Inject constructor(
                 SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR).toInt() - 2011 + 1
             }
             StatsGranularity.CUSTOM -> {
-                customRange.quantityBetweenTwoDates
+                customRange.checkForWrongValues()
+                SiteUtils.calculateTimeDifferencesBetweenDates(
+                        customRange.getStartDateInDateFormat,
+                        customRange.getEndDateInDateFormat,
+                        customRange.getTimeEnum
+                )
             }
         }
     }
@@ -318,7 +323,8 @@ class WCStatsStore @Inject constructor(
             StatsGranularity.YEARS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR)
             StatsGranularity.CUSTOM -> {
                 // For the custom granularity, we want the actual inputted start date
-                statsCustomRange.startDate
+                val weekOfTheYear = SiteUtils.getWeekNumberInCalendar(statsCustomRange.getEndDateInDateFormat)
+                statsCustomRange.getStartDate(weekOfTheYear)
             }
         }
     }

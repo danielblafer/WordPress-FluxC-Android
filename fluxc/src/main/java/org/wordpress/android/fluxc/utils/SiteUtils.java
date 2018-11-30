@@ -13,7 +13,6 @@ import java.util.TimeZone;
 import static org.apache.commons.lang3.StringUtils.split;
 
 public class SiteUtils {
-
     private static final long MILLISECONDS = 1000;
     private static final long ONE_DAY_IN_SECONDS = 86400;
     private static final long DAYS_IN_A_WEEK = 7;
