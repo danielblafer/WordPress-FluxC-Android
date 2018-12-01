@@ -37,7 +37,7 @@ class StatsCustomRange {
 
             mStartDate = formatter.parse("2018-09-18")
             mEndDate = formatter.parse("2018-11-28")
-            granularity = OrderStatsApiUnit.YEAR
+            granularity = OrderStatsApiUnit.DAY
         }
     }
 
