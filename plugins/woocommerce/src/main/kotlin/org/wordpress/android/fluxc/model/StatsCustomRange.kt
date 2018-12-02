@@ -2,7 +2,6 @@ package org.wordpress.android.fluxc.model
 
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
 import org.wordpress.android.fluxc.store.WCStatsStore
-import org.wordpress.android.fluxc.utils.SiteUtils
 import org.wordpress.android.fluxc.utils.TimeEnum
 import java.text.ParseException
 import java.text.SimpleDateFormat

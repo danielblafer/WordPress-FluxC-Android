@@ -312,9 +312,6 @@ class WCStatsStore @Inject constructor(
         emitChange(onTopEarnersChanged)
     }
 
-    /**
-     * The safest way to pass a custom date would be a "Full Date", that is to say a Year-Month-Day
-     */
     private fun getFormattedDate(site: SiteModel, granularity: StatsGranularity, statsCustomRange: StatsCustomRange): String {
         return when (granularity) {
             StatsGranularity.DAYS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY)
@@ -324,7 +321,7 @@ class WCStatsStore @Inject constructor(
             StatsGranularity.CUSTOM -> {
                 // For the custom granularity, we want the actual inputted start date
                 val weekOfTheYear = SiteUtils.getWeekNumberInCalendar(statsCustomRange.getEndDateInDateFormat)
-                statsCustomRange.getStartDate(weekOfTheYear)
+                statsCustomRange.getEndDate(weekOfTheYear)
             }
         }
     }
