@@ -43,8 +43,8 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertValidStringDates() {
-        Assert.assertEquals(statsCustomRange.getStartDate(WEEK_OF_THE_YEAR), START_DATE_STRING)
-        Assert.assertEquals(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), END_DATE_STRING)
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), START_DATE_STRING)
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), END_DATE_STRING)
     }
 
     @Test
@@ -60,7 +60,7 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertGetTimeEnumIsNoneOfTheValues() {
-        statsCustomRange.granularity = OrderStatsApiUnit.DEFAULT
+        statsCustomRange.granularity = OrderStatsApiUnit.CUSTOM
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.DAYS)
     }
 
@@ -92,42 +92,42 @@ class StatsCustomRangeTest {
     fun assertCheckForOvershotDatesIsOvershot() {
         statsCustomRange.setEndDate(formatter.parse("2019-09-18"))
         statsCustomRange.checkForOvershotDates()
-        Assert.assertEquals(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
     }
 
     @Test
     fun assertCheckForOvershotDatesIsSameAsToday() {
         statsCustomRange.setEndDate(formatter.parse(getCurrentDateInStringFormat()))
         statsCustomRange.checkForOvershotDates()
-        Assert.assertEquals(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
     }
 
     @Test
     fun assertCheckForOvershotDatesIsNotOvershot() {
         statsCustomRange.setEndDate(formatter.parse("2019-09-18"))
         statsCustomRange.checkForOvershotDates()
-        Assert.assertNotSame(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
+        Assert.assertNotSame(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
     }
 
     @Test
     fun assertCheckForSwitchedDatesActualSwitchedDates() {
-        val oldStartDate = statsCustomRange.getStartDate(WEEK_OF_THE_YEAR)
-        val oldEndDate = statsCustomRange.getEndDate(WEEK_OF_THE_YEAR)
+        val oldStartDate = statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR)
+        val oldEndDate = statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR)
 
         statsCustomRange.setEndDate(formatter.parse(START_DATE_STRING))
         statsCustomRange.setStartDate(formatter.parse(END_DATE_STRING))
         statsCustomRange.checkForSwitchedDates()
 
-        Assert.assertEquals(statsCustomRange.getStartDate(WEEK_OF_THE_YEAR), oldStartDate)
-        Assert.assertEquals(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), oldEndDate)
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), oldStartDate)
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), oldEndDate)
     }
 
     @Test
     fun assertCheckForSwitchedDatesNonSwitchedDates() {
         statsCustomRange.checkForSwitchedDates()
 
-        Assert.assertEquals(statsCustomRange.getStartDate(WEEK_OF_THE_YEAR), START_DATE_STRING)
-        Assert.assertEquals(statsCustomRange.getEndDate(WEEK_OF_THE_YEAR), END_DATE_STRING)
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), START_DATE_STRING)
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), END_DATE_STRING)
     }
 
     @Test

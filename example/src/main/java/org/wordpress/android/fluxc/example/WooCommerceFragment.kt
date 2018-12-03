@@ -29,6 +29,8 @@ import org.wordpress.android.fluxc.model.WCOrderNoteModel
 import org.wordpress.android.fluxc.model.order.OrderIdentifier
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.CoreOrderStatus
 import org.wordpress.android.fluxc.model.StatsCustomRange
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
+import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit.WEEK
 import org.wordpress.android.fluxc.store.WCOrderStore
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchHasOrdersPayload
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchOrderNotesPayload
@@ -52,6 +54,9 @@ import org.wordpress.android.fluxc.store.WooCommerceStore.OnApiVersionFetched
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
 import org.wordpress.android.util.ToastUtils
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 class WooCommerceFragment : Fragment() {
@@ -273,8 +278,11 @@ class WooCommerceFragment : Fragment() {
 
         fetch_custom_range_orders.setOnClickListener {
             getFirstWCSite()?.let {
+                val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
+                val startDate = formatter.parse("2018-09-18")
+                val endDate = formatter.parse("2018-12-18")
                 val payload = FetchOrderStatsPayload(it, StatsGranularity.CUSTOM, true,
-                        StatsCustomRange(true)
+                        StatsCustomRange(startDate, endDate, OrderStatsApiUnit.DAY)
                 )
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
             } ?: showNoWCSitesToast()

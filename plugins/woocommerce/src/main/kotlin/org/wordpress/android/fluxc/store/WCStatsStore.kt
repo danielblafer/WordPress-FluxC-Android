@@ -29,6 +29,8 @@ class WCStatsStore @Inject constructor(
     dispatcher: Dispatcher,
     private val wcOrderStatsClient: OrderStatsRestClient
 ) : Store(dispatcher) {
+    private var isCustom : Boolean = false
+
     companion object {
         const val STATS_QUANTITY_DAYS = 30
         const val STATS_QUANTITY_WEEKS = 17
@@ -50,7 +52,7 @@ class WCStatsStore @Inject constructor(
                     OrderStatsApiUnit.WEEK -> StatsGranularity.WEEKS
                     OrderStatsApiUnit.MONTH -> StatsGranularity.MONTHS
                     OrderStatsApiUnit.YEAR -> StatsGranularity.YEARS
-                    OrderStatsApiUnit.DEFAULT -> StatsGranularity.CUSTOM
+                    OrderStatsApiUnit.CUSTOM -> StatsGranularity.CUSTOM
                 }
             }
         }
@@ -235,10 +237,10 @@ class WCStatsStore @Inject constructor(
                 SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR).toInt() - 2011 + 1
             }
             StatsGranularity.CUSTOM -> {
-                customRange.checkForWrongValues()
+                customRange.checkForSwitchedDates()
                 SiteUtils.calculateTimeDifferencesBetweenDates(
-                        customRange.getStartDateInDateFormat,
-                        customRange.getEndDateInDateFormat,
+                        customRange.startDate,
+                        customRange.endDate,
                         customRange.getTimeEnum
                 )
             }
@@ -247,6 +249,11 @@ class WCStatsStore @Inject constructor(
 
     private fun fetchOrderStats(payload: FetchOrderStatsPayload) {
         val quantity = getQuantityForGranularity(payload.site, payload.granularity, payload.customRange)
+
+        if(payload.granularity == StatsGranularity.CUSTOM){
+            this.isCustom = true
+        }
+
         wcOrderStatsClient.fetchStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity, payload.customRange.granularity),
@@ -279,10 +286,15 @@ class WCStatsStore @Inject constructor(
 
     private fun handleFetchOrderStatsCompleted(payload: FetchOrderStatsResponsePayload) {
         val onStatsChanged = with(payload) {
-            val granularity = StatsGranularity.fromOrderStatsApiUnit(apiUnit)
+            var granularity = StatsGranularity.fromOrderStatsApiUnit(apiUnit)
             if (isError || stats == null) {
                 return@with OnWCStatsChanged(0, granularity).also { it.error = payload.error }
             } else {
+                if(isCustom){
+                    stats.unit = StatsGranularity.CUSTOM.name
+                    granularity = StatsGranularity.CUSTOM
+                    isCustom = false
+                }
                 val rowsAffected = WCStatsSqlUtils.insertOrUpdateStats(stats)
                 return@with OnWCStatsChanged(rowsAffected, granularity)
             }
@@ -320,8 +332,8 @@ class WCStatsStore @Inject constructor(
             StatsGranularity.YEARS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR)
             StatsGranularity.CUSTOM -> {
                 // For the custom granularity, we want the actual inputted start date
-                val weekOfTheYear = SiteUtils.getWeekNumberInCalendar(statsCustomRange.getEndDateInDateFormat)
-                statsCustomRange.getEndDate(weekOfTheYear)
+                val weekOfTheYear = SiteUtils.getWeekNumberInCalendar(statsCustomRange.endDate)
+                statsCustomRange.getEndDateAsStringForGranularity(weekOfTheYear)
             }
         }
     }
@@ -334,7 +346,7 @@ class WCStatsStore @Inject constructor(
         field: OrderStatsField,
         granularity: StatsGranularity
     ): Map<String, T> {
-        val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity, OrderStatsApiUnit.DEFAULT)
+        val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity, OrderStatsApiUnit.CUSTOM)
         val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit)
         rawStats?.let {
             val periodIndex = it.getIndexForField(OrderStatsField.PERIOD)

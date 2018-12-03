@@ -32,7 +32,7 @@ object WCStatsSqlUtils {
                 .where()
                 .beginGroup()
                 .equals(WCOrderStatsModelTable.LOCAL_SITE_ID, site.id)
-                .equals(WCOrderStatsModelTable.UNIT, unit)
+                .equals(WCOrderStatsModelTable.UNIT, unit.name)
                 .endGroup().endWhere()
                 .asModel.firstOrNull()
     }
