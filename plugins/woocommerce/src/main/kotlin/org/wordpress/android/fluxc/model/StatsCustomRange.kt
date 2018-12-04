@@ -53,8 +53,15 @@ class StatsCustomRange(
             this.granularity === OrderStatsApiUnit.YEAR -> fullDate.substring(0, fullDate.length - 6)
             this.granularity === OrderStatsApiUnit.MONTH -> fullDate.substring(0, fullDate.length - 3)
             this.granularity === OrderStatsApiUnit.WEEK -> {
+
+                var weekString = week.toString()
+
+                if(week < 10) {
+                    weekString = "0$week"
+                }
+
                 val year = fullDate.substring(0, fullDate.length - 6)
-                "$year-W$week"
+                "$year-W$weekString"
             }
             else -> fullDate
         }

@@ -169,13 +169,23 @@ class StatsCustomRangeTest {
     }
 
     @Test
-    fun assertClipDateBasedOnGranularityWeekDate() {
+    fun assertClipDateBasedOnGranularityWeekDateWeekBiggerThan10() {
         statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
         Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(
                 START_DATE_STRING, WEEK_OF_THE_YEAR),
                 "2018-W48"
         )
     }
+
+    @Test
+    fun assertClipDateBasedOnGranularityWeekDateWeekSmallerThan10() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
+        Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(
+                START_DATE_STRING, 1),
+                "2018-W01"
+        )
+    }
+
 
     @Test
     fun assertClipDateBasedOnGranularityDayDate() {
@@ -201,5 +211,4 @@ class StatsCustomRangeTest {
         private const val END_DATE_STRING = "2018-12-18"
         private const val WEEK_OF_THE_YEAR = 48
     }
-
 }
