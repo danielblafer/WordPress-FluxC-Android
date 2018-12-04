@@ -19,18 +19,17 @@ import org.wordpress.android.fluxc.action.WCOrderAction.FETCH_SINGLE_ORDER
 import org.wordpress.android.fluxc.action.WCOrderAction.POST_ORDER_NOTE
 import org.wordpress.android.fluxc.action.WCOrderAction.UPDATE_ORDER_STATUS
 import org.wordpress.android.fluxc.action.WCStatsAction
+import org.wordpress.android.fluxc.example.contract.CustomRangeContract
 import org.wordpress.android.fluxc.example.utils.showSingleLineDialog
 import org.wordpress.android.fluxc.generated.WCCoreActionBuilder
 import org.wordpress.android.fluxc.generated.WCOrderActionBuilder
 import org.wordpress.android.fluxc.generated.WCStatsActionBuilder
 import org.wordpress.android.fluxc.model.SiteModel
+import org.wordpress.android.fluxc.model.StatsCustomRange
 import org.wordpress.android.fluxc.model.WCOrderModel
 import org.wordpress.android.fluxc.model.WCOrderNoteModel
 import org.wordpress.android.fluxc.model.order.OrderIdentifier
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.order.CoreOrderStatus
-import org.wordpress.android.fluxc.model.StatsCustomRange
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit.WEEK
 import org.wordpress.android.fluxc.store.WCOrderStore
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchHasOrdersPayload
 import org.wordpress.android.fluxc.store.WCOrderStore.FetchOrderNotesPayload
@@ -54,12 +53,9 @@ import org.wordpress.android.fluxc.store.WooCommerceStore.OnApiVersionFetched
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
 import org.wordpress.android.util.ToastUtils
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
-class WooCommerceFragment : Fragment() {
+class WooCommerceFragment : Fragment() , CustomRangeContract {
     @Inject internal lateinit var dispatcher: Dispatcher
     @Inject internal lateinit var wooCommerceStore: WooCommerceStore
     @Inject internal lateinit var wcOrderStore: WCOrderStore
@@ -277,16 +273,15 @@ class WooCommerceFragment : Fragment() {
         }
 
         fetch_custom_range_orders.setOnClickListener {
-            getFirstWCSite()?.let {
-                val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
-                val startDate = formatter.parse("2018-09-18")
-                val endDate = formatter.parse("2018-12-18")
-                val payload = FetchOrderStatsPayload(it, StatsGranularity.CUSTOM, true,
-                        StatsCustomRange(startDate, endDate, OrderStatsApiUnit.DAY)
-                )
-                dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
-            } ?: showNoWCSitesToast()
+            val dialog = DashboardCustomDialog()
+            dialog.setTargetFragment(this, 0)
+            dialog.show(fragmentManager, "dialog")
         }
+    }
+
+    override fun userDefinedCustomRange(statsCustomRange: StatsCustomRange) {
+        val payload = FetchOrderStatsPayload(getFirstWCSite()!!, StatsGranularity.CUSTOM, true, statsCustomRange)
+        dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
     }
 
     override fun onStart() {

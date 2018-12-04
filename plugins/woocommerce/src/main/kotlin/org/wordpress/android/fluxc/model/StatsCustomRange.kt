@@ -11,13 +11,12 @@ import java.util.Locale
  * This class is devoided of any Static calls as to be fully 100% testable
  */
 class StatsCustomRange(
+    // In the future we need to use LocalDate. The MinApi Call is #26 though which may prove a bit steep. Still, it
+    //  reduces boiler plate code so much.
     var startDate: Date = Date(),
     var endDate: Date = Date(),
     var granularity: OrderStatsApiUnit = OrderStatsApiUnit.CUSTOM
 ) {
-    // In the future we need to use LocalDate. The MinApi Call is #26 though which may prove a bit steep. Still, it
-    //  reduces boiler plate code so much.
-
     fun getStartDateAsStringForGranularity(weekOfTheYear: Int): String {
         val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
         val fullDate = formatter.format(startDate)
