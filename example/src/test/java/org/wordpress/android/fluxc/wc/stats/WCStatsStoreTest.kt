@@ -62,18 +62,18 @@ class WCStatsStoreTest {
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
             assertEquals(1, size)
-            assertEquals("day", first().unit)
+            assertEquals("DAY", first().unit)
         }
 
         // Create a second stats entry for this site
         val orderStatsModel2 =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", fields = "fake-data", data = "fake-data")
+                WCStatsTestUtils.generateSampleStatsModel(unit = "MONTH", fields = "fake-data", data = "fake-data")
         WCStatsSqlUtils.insertOrUpdateStats(orderStatsModel2)
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
             assertEquals(2, size)
-            assertEquals("day", first().unit)
-            assertEquals("month", get(1).unit)
+            assertEquals("DAY", first().unit)
+            assertEquals("MONTH", get(1).unit)
         }
 
         // Overwrite an existing entry
@@ -82,8 +82,8 @@ class WCStatsStoreTest {
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
             assertEquals(2, size)
-            assertEquals("day", first().unit)
-            assertEquals("month", get(1).unit)
+            assertEquals("DAY", first().unit)
+            assertEquals("MONTH", get(1).unit)
         }
 
         // Add another "day" entry, but for another site
@@ -92,9 +92,9 @@ class WCStatsStoreTest {
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
             assertEquals(3, size)
-            assertEquals("day", first().unit)
-            assertEquals("month", get(1).unit)
-            assertEquals("day", get(2).unit)
+            assertEquals("DAY", first().unit)
+            assertEquals("MONTH", get(1).unit)
+            assertEquals("DAY", get(2).unit)
         }
     }
 
@@ -142,7 +142,7 @@ class WCStatsStoreTest {
         val dayOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel()
         val site = SiteModel().apply { id = dayOrderStatsModel.localSiteId }
         val monthOrderStatsModel =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", fields = "fake-data", data = "fake-data")
+                WCStatsTestUtils.generateSampleStatsModel(unit = "MONTH", fields = "fake-data", data = "fake-data")
         WCStatsSqlUtils.insertOrUpdateStats(dayOrderStatsModel)
         WCStatsSqlUtils.insertOrUpdateStats(monthOrderStatsModel)
 
@@ -150,27 +150,27 @@ class WCStatsStoreTest {
         val altSiteOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel(localSiteId = site2.id)
         WCStatsSqlUtils.insertOrUpdateStats(altSiteOrderStatsModel)
 
-        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.DAY)
+        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.DAY.name)
         assertNotNull(dayOrderStats)
         with(dayOrderStats!!) {
-            assertEquals("day", unit)
+            assertEquals("DAY", unit)
         }
 
-        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site2, OrderStatsApiUnit.DAY)
+        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site2, OrderStatsApiUnit.DAY.name)
         assertNotNull(altSiteDayOrderStats)
 
-        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.MONTH)
+        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.MONTH.name)
         assertNotNull(monthOrderStatus)
         with(monthOrderStatus!!) {
-            assertEquals("month", unit)
+            assertEquals("MONTH", unit)
         }
 
         val nonExistentSite = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
-                SiteModel().apply { id = 88 }, OrderStatsApiUnit.DAY
+                SiteModel().apply { id = 88 }, OrderStatsApiUnit.DAY.name
         )
         assertNull(nonExistentSite)
 
-        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.YEAR)
+        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.YEAR.name)
         assertNull(missingData)
     }
 

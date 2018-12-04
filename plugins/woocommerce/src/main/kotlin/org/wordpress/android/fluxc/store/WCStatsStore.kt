@@ -347,7 +347,7 @@ class WCStatsStore @Inject constructor(
         granularity: StatsGranularity
     ): Map<String, T> {
         val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity, OrderStatsApiUnit.CUSTOM)
-        val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit)
+        val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit.name)
         rawStats?.let {
             val periodIndex = it.getIndexForField(OrderStatsField.PERIOD)
             val fieldIndex = it.getIndexForField(field)

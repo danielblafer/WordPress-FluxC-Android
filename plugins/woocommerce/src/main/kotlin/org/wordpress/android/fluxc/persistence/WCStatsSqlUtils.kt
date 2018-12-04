@@ -27,12 +27,12 @@ object WCStatsSqlUtils {
         }
     }
 
-    fun getRawStatsForSiteAndUnit(site: SiteModel, unit: OrderStatsApiUnit): WCOrderStatsModel? {
+    fun getRawStatsForSiteAndUnit(site: SiteModel, unitName: String): WCOrderStatsModel? {
         return WellSql.select(WCOrderStatsModel::class.java)
                 .where()
                 .beginGroup()
                 .equals(WCOrderStatsModelTable.LOCAL_SITE_ID, site.id)
-                .equals(WCOrderStatsModelTable.UNIT, unit.name)
+                .equals(WCOrderStatsModelTable.UNIT, unitName)
                 .endGroup().endWhere()
                 .asModel.firstOrNull()
     }

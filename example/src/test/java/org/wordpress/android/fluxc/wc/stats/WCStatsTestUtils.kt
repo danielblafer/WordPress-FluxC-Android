@@ -7,7 +7,7 @@ import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRe
 object WCStatsTestUtils {
     fun generateSampleStatsModel(
         localSiteId: Int = 6,
-        unit: String = OrderStatsApiUnit.DAY.toString(),
+        unit: String = OrderStatsApiUnit.DAY.name,
         fields: String = UnitTestUtils.getStringFromResourceFile(this.javaClass, "wc/order-stats-fields.json"),
         data: String = UnitTestUtils.getStringFromResourceFile(this.javaClass, "wc/order-stats-data.json")
     ): WCOrderStatsModel {
