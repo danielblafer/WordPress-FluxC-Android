@@ -28,8 +28,6 @@ class StatsCustomRangeTest {
     fun setUp() {
         startDate = formatter.parse(START_DATE_STRING)
         endDate = formatter.parse(END_DATE_STRING)
-
-        statsCustomRange = Mockito.spy(StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY))
     }
 
     @Test
@@ -37,85 +35,105 @@ class StatsCustomRangeTest {
         val dateTest1 = formatter.parse(START_DATE_STRING)
         val dateTest2 = formatter.parse(END_DATE_STRING)
 
-        Assert.assertEquals(statsCustomRange.getStartDateInDateFormat, dateTest1)
-        Assert.assertEquals(statsCustomRange.getEndDateInDateFormat, dateTest2)
+        // NOTE: The Granularity is irrelevant for this test
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
+
+        Assert.assertEquals(statsCustomRange.startDate, dateTest1)
+        Assert.assertEquals(statsCustomRange.endDate, dateTest2)
     }
 
     @Test
-    fun assertValidStringDates() {
+    fun assertValidStringDatesWhenGranularityIsDay() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY)
+
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), START_DATE_STRING)
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), END_DATE_STRING)
+    }
+
+    @Test
+    fun assertValidStringDatesWhenGranularityIsWeek() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
+
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018-W48")
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018-W48")
+    }
+
+    @Test
+    fun assertValidStringDatesWhenGranularityIsMonth() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.MONTH)
+
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018-09")
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018-12")
+    }
+
+    @Test
+    fun assertValidStringDatesWhenGranularityIsYear() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.YEAR)
+
+        Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018")
+        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), "2018")
+    }
+
+    @Test
+    fun assertValidStringDatesWhenGranularityIsCustom() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.CUSTOM)
+
         Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), START_DATE_STRING)
         Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), END_DATE_STRING)
     }
 
     @Test
     fun assertCheckForWrongValuesCorrectCalls() {
-        doNothing().`when`(statsCustomRange)!!.checkForSwitchedDates()
-        doNothing().`when`(statsCustomRange)!!.checkForOvershotDates()
+        // NOTE: The Granularity is irrelevant for this test
+        statsCustomRange = Mockito.spy(StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK))
 
-        statsCustomRange.checkForWrongValues()
+        doNothing().`when`(statsCustomRange)!!.checkForSwitchedDates()
+
+        statsCustomRange.checkForSwitchedDates()
 
         verify(statsCustomRange).checkForSwitchedDates()
-        verify(statsCustomRange).checkForOvershotDates()
     }
 
     @Test
     fun assertGetTimeEnumIsNoneOfTheValues() {
-        statsCustomRange.granularity = OrderStatsApiUnit.CUSTOM
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.CUSTOM)
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.DAYS)
     }
 
     @Test
     fun assertGetTimeEnumIsDays() {
-        statsCustomRange.granularity = OrderStatsApiUnit.DAY
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY)
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.DAYS)
     }
 
     @Test
     fun assertGetTimeEnumIsWeeks() {
-        statsCustomRange.granularity = OrderStatsApiUnit.WEEK
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.WEEKS)
     }
 
     @Test
     fun assertGetTimeEnumIsMonths() {
-        statsCustomRange.granularity = OrderStatsApiUnit.MONTH
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.MONTH)
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.MONTHS)
     }
 
     @Test
     fun assertGetTimeEnumIsYears() {
-        statsCustomRange.granularity = OrderStatsApiUnit.YEAR
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.YEAR)
         Assert.assertEquals(statsCustomRange.getTimeEnum, TimeEnum.YEARS)
     }
 
     @Test
-    fun assertCheckForOvershotDatesIsOvershot() {
-        statsCustomRange.setEndDate(formatter.parse("2019-09-18"))
-        statsCustomRange.checkForOvershotDates()
-        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
-    }
-
-    @Test
-    fun assertCheckForOvershotDatesIsSameAsToday() {
-        statsCustomRange.setEndDate(formatter.parse(getCurrentDateInStringFormat()))
-        statsCustomRange.checkForOvershotDates()
-        Assert.assertEquals(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
-    }
-
-    @Test
-    fun assertCheckForOvershotDatesIsNotOvershot() {
-        statsCustomRange.setEndDate(formatter.parse("2019-09-18"))
-        statsCustomRange.checkForOvershotDates()
-        Assert.assertNotSame(statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR), getCurrentDateInStringFormat())
-    }
-
-    @Test
     fun assertCheckForSwitchedDatesActualSwitchedDates() {
+        // NOTE: The Granularity is irrelevant for this test
+        statsCustomRange = Mockito.spy(StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY))
+
         val oldStartDate = statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR)
         val oldEndDate = statsCustomRange.getEndDateAsStringForGranularity(WEEK_OF_THE_YEAR)
 
-        statsCustomRange.setEndDate(formatter.parse(START_DATE_STRING))
-        statsCustomRange.setStartDate(formatter.parse(END_DATE_STRING))
+        statsCustomRange.endDate = formatter.parse(START_DATE_STRING)
+        statsCustomRange.startDate = formatter.parse(END_DATE_STRING)
         statsCustomRange.checkForSwitchedDates()
 
         Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), oldStartDate)
@@ -124,6 +142,9 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertCheckForSwitchedDatesNonSwitchedDates() {
+        // NOTE: The Granularity is irrelevant for this test
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY)
+
         statsCustomRange.checkForSwitchedDates()
 
         Assert.assertEquals(statsCustomRange.getStartDateAsStringForGranularity(WEEK_OF_THE_YEAR), START_DATE_STRING)
@@ -132,7 +153,7 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertClipDateBasedOnGranularityYearDate() {
-        statsCustomRange.granularity = OrderStatsApiUnit.YEAR
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.YEAR)
         Assert.assertEquals(
                 statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
                 "2018")
@@ -140,7 +161,7 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertClipDateBasedOnGranularityMonthDate() {
-        statsCustomRange.granularity = OrderStatsApiUnit.MONTH
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.MONTH)
         Assert.assertEquals(
                 statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
                 "2018-09"
@@ -149,7 +170,7 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertClipDateBasedOnGranularityWeekDate() {
-        statsCustomRange.granularity = OrderStatsApiUnit.WEEK
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.WEEK)
         Assert.assertEquals(statsCustomRange.clipDateBasedOnGranularity(
                 START_DATE_STRING, WEEK_OF_THE_YEAR),
                 "2018-W48"
@@ -158,11 +179,22 @@ class StatsCustomRangeTest {
 
     @Test
     fun assertClipDateBasedOnGranularityDayDate() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.DAY)
         Assert.assertEquals(
                 statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
                 START_DATE_STRING
         )
     }
+
+    @Test
+    fun assertClipDateBasedOnGranularityCustomDate() {
+        statsCustomRange = StatsCustomRange(startDate!!, endDate!!, OrderStatsApiUnit.CUSTOM)
+        Assert.assertEquals(
+                statsCustomRange.clipDateBasedOnGranularity(START_DATE_STRING, WEEK_OF_THE_YEAR),
+                START_DATE_STRING
+        )
+    }
+
 
     companion object {
         private const val START_DATE_STRING = "2018-09-18"
@@ -170,7 +202,4 @@ class StatsCustomRangeTest {
         private const val WEEK_OF_THE_YEAR = 48
     }
 
-    private fun getCurrentDateInStringFormat(): String {
-        return SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY).format(Date())
-    }
 }
