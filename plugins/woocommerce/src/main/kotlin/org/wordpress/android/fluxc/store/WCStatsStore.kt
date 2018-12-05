@@ -16,6 +16,7 @@ import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRe
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
 import org.wordpress.android.fluxc.persistence.WCStatsSqlUtils
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.GENERIC_ERROR
+import org.wordpress.android.fluxc.utils.DateUtils
 import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError
 import org.wordpress.android.fluxc.utils.SiteUtils
 import org.wordpress.android.util.AppLog
@@ -37,9 +38,9 @@ class WCStatsStore @Inject constructor(
         const val STATS_QUANTITY_MONTHS = 12
 
         const val DATE_FORMAT_DAY = "yyyy-MM-dd"
-        private const val DATE_FORMAT_WEEK = "yyyy-'W'ww"
-        private const val DATE_FORMAT_MONTH = "yyyy-MM"
-        private const val DATE_FORMAT_YEAR = "yyyy"
+        const val DATE_FORMAT_WEEK = "yyyy-'W'ww"
+        const val DATE_FORMAT_MONTH = "yyyy-MM"
+        const val DATE_FORMAT_YEAR = "yyyy"
     }
 
     enum class StatsGranularity {
@@ -238,7 +239,7 @@ class WCStatsStore @Inject constructor(
             }
             StatsGranularity.CUSTOM -> {
                 customRange.checkForSwitchedDates()
-                SiteUtils.calculateTimeDifferencesBetweenDates(
+                DateUtils.calculateTimeDifferencesBetweenDates(
                         customRange.startDate,
                         customRange.endDate,
                         customRange.getTimeEnum
@@ -331,9 +332,7 @@ class WCStatsStore @Inject constructor(
             StatsGranularity.MONTHS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_MONTH)
             StatsGranularity.YEARS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR)
             StatsGranularity.CUSTOM -> {
-                // For the custom granularity, we want the actual inputted start date
-                val weekOfTheYear = SiteUtils.getWeekNumberInCalendar(statsCustomRange.endDate)
-                statsCustomRange.getEndDateAsStringForGranularity(weekOfTheYear)
+                SiteUtils.getDateTimeForSite(site, statsCustomRange.getCorrectDateFormat, statsCustomRange.endDate)
             }
         }
     }

@@ -17,18 +17,6 @@ class StatsCustomRange(
     var endDate: Date = Date(),
     var granularity: OrderStatsApiUnit = OrderStatsApiUnit.CUSTOM
 ) {
-    fun getStartDateAsStringForGranularity(weekOfTheYear: Int): String {
-        val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
-        val fullDate = formatter.format(startDate)
-        return clipDateBasedOnGranularity(fullDate, weekOfTheYear)
-    }
-
-    fun getEndDateAsStringForGranularity(weekOfTheYear: Int): String {
-        val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
-        val fullDate = formatter.format(endDate)
-        return clipDateBasedOnGranularity(fullDate, weekOfTheYear)
-    }
-
     val getTimeEnum: TimeEnum
         get() {
             return when {
@@ -48,22 +36,14 @@ class StatsCustomRange(
         }
     }
 
-    fun clipDateBasedOnGranularity(fullDate: String, week: Int): String {
-        return when {
-            this.granularity === OrderStatsApiUnit.YEAR -> fullDate.substring(0, fullDate.length - 6)
-            this.granularity === OrderStatsApiUnit.MONTH -> fullDate.substring(0, fullDate.length - 3)
-            this.granularity === OrderStatsApiUnit.WEEK -> {
-
-                var weekString = week.toString()
-
-                if(week < 10) {
-                    weekString = "0$week"
-                }
-
-                val year = fullDate.substring(0, fullDate.length - 6)
-                "$year-W$weekString"
+    val getCorrectDateFormat: String
+        get() {
+            return when {
+                this.granularity === OrderStatsApiUnit.DAY -> WCStatsStore.DATE_FORMAT_DAY
+                this.granularity === OrderStatsApiUnit.WEEK -> WCStatsStore.DATE_FORMAT_WEEK
+                this.granularity === OrderStatsApiUnit.MONTH -> WCStatsStore.DATE_FORMAT_MONTH
+                this.granularity === OrderStatsApiUnit.YEAR -> WCStatsStore.DATE_FORMAT_YEAR
+                else -> WCStatsStore.DATE_FORMAT_DAY // Default
             }
-            else -> fullDate
         }
-    }
 }
