@@ -119,6 +119,12 @@
             android:text="Fetch 30-day Top Earners Stats (forced)"/>
 
         <Button
+            android:id="@+id/fetch_past_30_days"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fetch Order Past Days"/>
+
+        <Button
             android:id="@+id/fetch_custom_range_orders"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

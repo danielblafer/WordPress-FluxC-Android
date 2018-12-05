@@ -272,6 +272,13 @@ class WooCommerceFragment : Fragment() , CustomRangeContract {
             } ?: showNoWCSitesToast()
         }
 
+        fetch_past_30_days.setOnClickListener {
+            getFirstWCSite()?.let {
+                val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS, false)
+                dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
+            } ?: showNoWCSitesToast()
+        }
+
         fetch_custom_range_orders.setOnClickListener {
             val dialog = DashboardCustomDialog()
             dialog.setTargetFragment(this, 0)
