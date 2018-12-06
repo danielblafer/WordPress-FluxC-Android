@@ -12,6 +12,7 @@ import org.wordpress.android.fluxc.persistence.WellSqlConfig
 data class WCOrderStatsModel(@PrimaryKey @Column private var id: Int = 0) : Identifiable {
     @Column var localSiteId = 0
     @Column var unit = "" // The unit ("day", "week", "month", "year")
+    @Column var custom = 0 // The unit may be a Custom defined unit
     @Column var fields = "" // JSON - A map of numerical index to stat name, used to lookup the stat in the data object
     @Column var data = "" // JSON - A list of lists; each nested list contains the data for a time period
 

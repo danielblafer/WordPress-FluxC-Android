@@ -15,6 +15,7 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
+import org.wordpress.android.fluxc.store.WCStatsStore
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
@@ -35,17 +36,16 @@ class OrderStatsRestClient(
     userAgent: UserAgent
 ) : BaseWPComRestClient(appContext, dispatcher, requestQueue, accessToken, userAgent) {
     enum class OrderStatsApiUnit {
-        DAY, WEEK, MONTH, YEAR, CUSTOM;
+        DAY, WEEK, MONTH, YEAR;
 
         companion object {
-            fun fromStatsGranularity(granularity: StatsGranularity, customRangeGranularity: OrderStatsApiUnit)
+            fun fromStatsGranularity(granularity: StatsGranularity)
                     : OrderStatsApiUnit {
                 return when (granularity) {
                     StatsGranularity.DAYS -> DAY
                     StatsGranularity.WEEKS -> WEEK
                     StatsGranularity.MONTHS -> MONTH
                     StatsGranularity.YEARS -> YEAR
-                    StatsGranularity.CUSTOM -> customRangeGranularity
                 }
             }
         }
@@ -66,7 +66,8 @@ class OrderStatsRestClient(
      * Possible non-generic errors:
      * [OrderStatsErrorType.INVALID_PARAM] if [unit], [date], or [quantity] are invalid or incompatible
      */
-    fun fetchStats(site: SiteModel, unit: OrderStatsApiUnit, date: String, quantity: Int, force: Boolean = false) {
+    fun fetchStats(site: SiteModel, unit: OrderStatsApiUnit, date: String, quantity: Int, force: Boolean = false,
+        isCustom: Int = WCStatsStore.IS_NOT_CUSTOM) {
         val url = WPCOMV2.sites.site(site.siteId).stats.orders.url
         val params = mapOf(
                 "unit" to unit.toString(),
@@ -94,7 +95,7 @@ class OrderStatsRestClient(
                         val payload = FetchOrderStatsResponsePayload(orderStatsError, site, unit)
                         mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
                     } else{
-                        val payload = FetchOrderStatsResponsePayload(site, unit, model)
+                        val payload = FetchOrderStatsResponsePayload(site, unit, model, isCustom)
                         mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
                     }
                 },
@@ -115,7 +116,8 @@ class OrderStatsRestClient(
         unit: OrderStatsApiUnit,
         date: String,
         quantity: Int,
-        force: Boolean = false
+        force: Boolean = false,
+        isCustom: Int
     ) {
         val url = WPCOMREST.sites.site(site.siteId).stats.visits.urlV1_1
         val params = mapOf(
@@ -127,7 +129,7 @@ class OrderStatsRestClient(
                 .buildGetRequest(url, params, VisitorStatsApiResponse::class.java,
                         { response ->
                             val visits = getVisitorsFromResponse(response)
-                            val payload = FetchVisitorStatsResponsePayload(site, unit, visits)
+                            val payload = FetchVisitorStatsResponsePayload(site, unit, visits, isCustom)
                             mDispatcher.dispatch(WCStatsActionBuilder.newFetchedVisitorStatsAction(payload))
                         },
                         { networkError ->

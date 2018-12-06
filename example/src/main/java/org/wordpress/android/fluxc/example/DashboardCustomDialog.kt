@@ -14,8 +14,6 @@ import android.widget.Spinner
 import android.widget.Toast
 import org.wordpress.android.fluxc.example.contract.CustomRangeContract
 import org.wordpress.android.fluxc.model.StatsCustomRange
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient
-import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
 import org.wordpress.android.fluxc.store.WCStatsStore
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import java.text.SimpleDateFormat
@@ -66,23 +64,14 @@ class DashboardCustomDialog : DialogFragment() {
         return view
     }
 
-    fun setContract(customRangeContract: CustomRangeContract) {
-        this.customRangeContract = customRangeContract
-    }
-
     private fun buttonListener(okButton: Button) {
         okButton.setOnClickListener {
             if (!startDate!!.text.isEmpty() && !endDate!!.text.isEmpty()) {
                 val statsCustomRange = StatsCustomRange(
                         formatter.parse(startDate!!.text.toString()),
-                        formatter.parse(endDate!!.text.toString()),
-                        OrderStatsRestClient.OrderStatsApiUnit.fromStatsGranularity(
-                                (granularityList!!.selectedItem as StatsGranularity),
-                                OrderStatsApiUnit.CUSTOM
-                        )
+                        formatter.parse(endDate!!.text.toString()))
 
-                )
-                customRangeContract!!.userDefinedCustomRange(statsCustomRange)
+                customRangeContract!!.userDefinedCustomRange(statsCustomRange, granularityList!!.selectedItem as StatsGranularity)
                 dismissDialog()
             }else {
                 Toast.makeText(
@@ -98,9 +87,7 @@ class DashboardCustomDialog : DialogFragment() {
         val values: MutableList<StatsGranularity> = ArrayList()
 
         StatsGranularity.values().forEach { granularity ->
-            if(granularity != StatsGranularity.CUSTOM){
-                values.add(granularity)
-            }
+            values.add(granularity)
         }
 
         return values

@@ -286,8 +286,14 @@ class WooCommerceFragment : Fragment() , CustomRangeContract {
         }
     }
 
-    override fun userDefinedCustomRange(statsCustomRange: StatsCustomRange) {
-        val payload = FetchOrderStatsPayload(getFirstWCSite()!!, StatsGranularity.CUSTOM, true, statsCustomRange)
+    override fun userDefinedCustomRange(statsCustomRange: StatsCustomRange, statsGranularity: StatsGranularity) {
+        val payload = FetchOrderStatsPayload(
+                getFirstWCSite()!!,
+                statsGranularity,
+                true,
+                WCStatsStore.IS_CUSTOM,
+                statsCustomRange
+        )
         dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
     }
 
@@ -421,7 +427,7 @@ class WooCommerceFragment : Fragment() , CustomRangeContract {
         val site = getFirstWCSite()
         when (event.causeOfChange) {
             WCStatsAction.FETCH_ORDER_STATS -> {
-                val statsMap = wcStatsStore.getRevenueStats(site!!, event.granularity)
+                val statsMap = wcStatsStore.getRevenueStats(site!!, event.granularity, event.isCustom)
                 if (statsMap.isEmpty()) {
                     prependToLog("No stats were stored for site " + site.name + " =(")
                 } else {

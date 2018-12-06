@@ -11,6 +11,11 @@ public class DateUtils {
     private static final double DAYS_IN_A_MONTH = 30.42;
     private static final double DAYS_IN_A_YEAR = 365;
 
+    private static final String DAYS = "DAYS";
+    private static final String WEEKS = "WEEKS";
+    private static final String MONTHS = "MONTHS";
+    private static final String YEARS = "YEARS";
+
     /**
      * While not ideal, this function calculates the number of "enum type" based on the difference in milliseconds
      *  between each date.
@@ -22,21 +27,24 @@ public class DateUtils {
      * This solution does not account for leap years or daylight savings.
      * @param startDate The starting date
      * @param endDate The ending date
-     * @param timeEnum The actual value of type we want (Days, Weeks, Months, Years)
+     * @param time The actual value of type we want (Days, Weeks, Months, Years)
      * @return an integer value of the type we want
      */
-    public static int calculateTimeDifferencesBetweenDates(Date startDate, Date endDate, TimeEnum timeEnum) {
+    public static int calculateTimeDifferencesBetweenDates(Date startDate, Date endDate, String time) {
         long differenceInTimeMS = endDate.getTime() - startDate.getTime();
 
-        if (timeEnum == TimeEnum.DAYS) {
-            return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS));
-        } else if (timeEnum == TimeEnum.WEEKS) {
-            return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_WEEK));
-        } else if (timeEnum == TimeEnum.MONTHS) {
-            return (int) ((long) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH)));
-        } else if (timeEnum == TimeEnum.YEARS) {
-            return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_YEAR));
-        } else return 0;
+        switch (time) {
+            case DAYS:
+                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS));
+            case WEEKS:
+                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_WEEK));
+            case MONTHS:
+                return (int) ((long) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH)));
+            case YEARS:
+                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_YEAR));
+            default:
+                return 0;
+        }
     }
 
     /**
