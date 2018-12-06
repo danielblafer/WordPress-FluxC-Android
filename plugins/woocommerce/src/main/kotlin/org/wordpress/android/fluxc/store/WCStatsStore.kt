@@ -30,7 +30,7 @@ class WCStatsStore @Inject constructor(
     dispatcher: Dispatcher,
     private val wcOrderStatsClient: OrderStatsRestClient
 ) : Store(dispatcher) {
-    private var customVal : Int = 0
+    private var customVal: Int = 0
 
     companion object {
         const val STATS_QUANTITY_DAYS = 30
@@ -123,8 +123,7 @@ class WCStatsStore @Inject constructor(
         val site: SiteModel,
         val granularity: StatsGranularity,
         val limit: Int = 10,
-        val forced: Boolean = false,
-        val customRange: StatsCustomRange  = StatsCustomRange()
+        val forced: Boolean = false
     ) : Payload<BaseNetworkError>()
 
     class FetchTopEarnersStatsResponsePayload(
@@ -151,7 +150,11 @@ class WCStatsStore @Inject constructor(
     }
 
     // OnChanged events
-    class OnWCStatsChanged(val rowsAffected: Int, val granularity: StatsGranularity, val isCustom: Int) : OnChanged<OrderStatsError>() {
+    class OnWCStatsChanged(
+        val rowsAffected: Int,
+        val granularity: StatsGranularity,
+        val isCustom: Int
+    ) : OnChanged<OrderStatsError>() {
         var causeOfChange: WCStatsAction? = null
     }
 
@@ -234,13 +237,15 @@ class WCStatsStore @Inject constructor(
     /**
      * returns the quantity (how far back to go) to use when requesting stats for a specific granularity
      */
-    private fun getQuantityForGranularity(site: SiteModel, granularity: StatsGranularity, customRange: StatsCustomRange)
-            : Int {
-        return if(this.customVal == IS_CUSTOM){
+    private fun getQuantityForGranularity(
+        site: SiteModel,
+        granularity: StatsGranularity,
+        customRange: StatsCustomRange
+    ): Int {
+        return if (this.customVal == IS_CUSTOM) {
             customRange.checkForSwitchedDates()
             DateUtils.calculateTimeDifferencesBetweenDates(customRange.startDate, customRange.endDate, granularity.name)
-        }
-        else {
+        } else {
             when (granularity) {
                 StatsGranularity.DAYS -> STATS_QUANTITY_DAYS
                 StatsGranularity.WEEKS -> STATS_QUANTITY_WEEKS
@@ -258,11 +263,10 @@ class WCStatsStore @Inject constructor(
 
         val quantity = getQuantityForGranularity(payload.site, payload.granularity, payload.customRange)
 
-
         wcOrderStatsClient.fetchStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, payload.customRange),
+                getFormattedDate(payload.site, payload.granularity),
                 quantity,
                 payload.forced,
                 this.customVal
@@ -274,7 +278,7 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchVisitorStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, payload.customRange),
+                getFormattedDate(payload.site, payload.granularity),
                 quantity,
                 payload.forced,
                 payload.isCustom
@@ -285,7 +289,7 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchTopEarnersStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, payload.customRange),
+                getFormattedDate(payload.site, payload.granularity),
                 payload.limit,
                 payload.forced
         )
@@ -297,7 +301,7 @@ class WCStatsStore @Inject constructor(
             if (isError || stats == null) {
                 return@with OnWCStatsChanged(0, granularity, payload.isCustom).also { it.error = payload.error }
             } else {
-                if(customVal == IS_CUSTOM){
+                if (customVal == IS_CUSTOM) {
                     stats.custom = customVal
                     customVal = IS_NOT_CUSTOM
                 }
@@ -330,7 +334,7 @@ class WCStatsStore @Inject constructor(
         emitChange(onTopEarnersChanged)
     }
 
-    private fun getFormattedDate(site: SiteModel, granularity: StatsGranularity, statsCustomRange: StatsCustomRange): String {
+    private fun getFormattedDate(site: SiteModel, granularity: StatsGranularity): String {
         return when (granularity) {
             StatsGranularity.DAYS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY)
             StatsGranularity.WEEKS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_WEEK)

@@ -21,7 +21,7 @@ import java.util.Calendar
 import java.util.Locale
 
 class DashboardCustomDialog : DialogFragment() {
-    private var simpleDateFormat : SimpleDateFormat? = null
+    private var simpleDateFormat: SimpleDateFormat? = null
     private var calendar: Calendar? = null
 
     private var startDate: EditText? = null
@@ -71,9 +71,12 @@ class DashboardCustomDialog : DialogFragment() {
                         formatter.parse(startDate!!.text.toString()),
                         formatter.parse(endDate!!.text.toString()))
 
-                customRangeContract!!.userDefinedCustomRange(statsCustomRange, granularityList!!.selectedItem as StatsGranularity)
+                customRangeContract!!.userDefinedCustomRange(
+                        statsCustomRange,
+                        granularityList!!.selectedItem as StatsGranularity
+                )
                 dismissDialog()
-            }else {
+            } else {
                 Toast.makeText(
                         activity,
                         "Please Fill all required fields",
@@ -83,7 +86,7 @@ class DashboardCustomDialog : DialogFragment() {
         }
     }
 
-    private fun granularityList() : MutableList<StatsGranularity> {
+    private fun granularityList(): MutableList<StatsGranularity> {
         val values: MutableList<StatsGranularity> = ArrayList()
 
         StatsGranularity.values().forEach { granularity ->

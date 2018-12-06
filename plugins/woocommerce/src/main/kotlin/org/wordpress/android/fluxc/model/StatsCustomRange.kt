@@ -1,6 +1,5 @@
 package org.wordpress.android.fluxc.model
 
-import org.wordpress.android.fluxc.utils.TimeEnum
 import java.util.Date
 
 /**

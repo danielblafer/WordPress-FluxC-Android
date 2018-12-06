@@ -55,7 +55,7 @@ import org.wordpress.android.util.AppLog.T
 import org.wordpress.android.util.ToastUtils
 import javax.inject.Inject
 
-class WooCommerceFragment : Fragment() , CustomRangeContract {
+class WooCommerceFragment : Fragment(), CustomRangeContract {
     @Inject internal lateinit var dispatcher: Dispatcher
     @Inject internal lateinit var wooCommerceStore: WooCommerceStore
     @Inject internal lateinit var wcOrderStore: WCOrderStore

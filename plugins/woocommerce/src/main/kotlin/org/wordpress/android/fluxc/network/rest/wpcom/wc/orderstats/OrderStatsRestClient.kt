@@ -39,8 +39,7 @@ class OrderStatsRestClient(
         DAY, WEEK, MONTH, YEAR;
 
         companion object {
-            fun fromStatsGranularity(granularity: StatsGranularity)
-                    : OrderStatsApiUnit {
+            fun fromStatsGranularity(granularity: StatsGranularity): OrderStatsApiUnit {
                 return when (granularity) {
                     StatsGranularity.DAYS -> DAY
                     StatsGranularity.WEEKS -> WEEK
@@ -90,17 +89,16 @@ class OrderStatsRestClient(
                         try {
                             this.fields = apiResponse.fields.toString()
                             this.data = apiResponse.data.toString()
-                        }
-                        catch (e: NullPointerException) {
+                        } catch (e: NullPointerException) {
                             noData = true
                         }
                     }
 
-                    if(noData){
+                    if (noData) {
                         val orderStatsError = OrderStatsError(NO_FIELDS_AVAILABLE, "No Data to Return")
                         val payload = FetchOrderStatsResponsePayload(orderStatsError, site, unit)
                         mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
-                    } else{
+                    } else {
                         val payload = FetchOrderStatsResponsePayload(site, unit, model, isCustom)
                         mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
                     }

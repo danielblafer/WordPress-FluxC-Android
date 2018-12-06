@@ -66,8 +66,12 @@ class WCStatsStoreTest {
         }
 
         // Create a second stats entry for this site
-        val orderStatsModel2 =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", custom = WCStatsStore.IS_NOT_CUSTOM, fields = "fake-data", data = "fake-data")
+        val orderStatsModel2 = WCStatsTestUtils.generateSampleStatsModel(
+                unit = "month",
+                custom = WCStatsStore.IS_NOT_CUSTOM,
+                fields = "fake-data",
+                data = "fake-data"
+        )
         WCStatsSqlUtils.insertOrUpdateStats(orderStatsModel2)
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
@@ -141,8 +145,12 @@ class WCStatsStoreTest {
     fun testGetRawStatsForSiteAndUnit() {
         val dayOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel()
         val site = SiteModel().apply { id = dayOrderStatsModel.localSiteId }
-        val monthOrderStatsModel =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", custom = WCStatsStore.IS_NOT_CUSTOM, fields = "fake-data", data = "fake-data")
+        val monthOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel(
+                unit = "month",
+                custom = WCStatsStore.IS_NOT_CUSTOM,
+                fields = "fake-data",
+                data = "fake-data"
+        )
         WCStatsSqlUtils.insertOrUpdateStats(dayOrderStatsModel)
         WCStatsSqlUtils.insertOrUpdateStats(monthOrderStatsModel)
 
@@ -150,16 +158,28 @@ class WCStatsStoreTest {
         val altSiteOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel(localSiteId = site2.id)
         WCStatsSqlUtils.insertOrUpdateStats(altSiteOrderStatsModel)
 
-        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.DAY, WCStatsStore.IS_NOT_CUSTOM)
+        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
+                site,
+                OrderStatsApiUnit.DAY,
+                WCStatsStore.IS_NOT_CUSTOM
+        )
         assertNotNull(dayOrderStats)
         with(dayOrderStats!!) {
             assertEquals("day", unit)
         }
 
-        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site2, OrderStatsApiUnit.DAY, WCStatsStore.IS_NOT_CUSTOM)
+        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
+                site2,
+                OrderStatsApiUnit.DAY,
+                WCStatsStore.IS_NOT_CUSTOM
+        )
         assertNotNull(altSiteDayOrderStats)
 
-        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.MONTH, WCStatsStore.IS_NOT_CUSTOM)
+        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
+                site,
+                OrderStatsApiUnit.MONTH,
+                WCStatsStore.IS_NOT_CUSTOM
+        )
         assertNotNull(monthOrderStatus)
         with(monthOrderStatus!!) {
             assertEquals("month", unit)
@@ -170,7 +190,11 @@ class WCStatsStoreTest {
         )
         assertNull(nonExistentSite)
 
-        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.YEAR, WCStatsStore.IS_NOT_CUSTOM)
+        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
+                site,
+                OrderStatsApiUnit.YEAR,
+                WCStatsStore.IS_NOT_CUSTOM
+        )
         assertNull(missingData)
     }
 

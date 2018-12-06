@@ -233,8 +233,14 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
         }
 
         interceptor.respondWithError(errorJson)
-        orderStatsRestClient.fetchVisitorStats(siteModel, OrderStatsApiUnit.MONTH, "invalid", 1, true
-                , WCStatsStore.IS_NOT_CUSTOM)
+        orderStatsRestClient.fetchVisitorStats(
+                siteModel,
+                OrderStatsApiUnit.MONTH,
+                "invalid",
+                1,
+                true,
+                WCStatsStore.IS_NOT_CUSTOM
+        )
 
         countDownLatch = CountDownLatch(1)
         assertTrue(countDownLatch.await(TestUtils.DEFAULT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS))
