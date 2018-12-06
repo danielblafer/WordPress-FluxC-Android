@@ -35,15 +35,25 @@ public class DateUtils {
 
         switch (time) {
             case DAYS:
-                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS));
+                // The +1 counts for inclusive days
+                return ((int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS))) + 1;
             case WEEKS:
-                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_WEEK));
+                // The +1 counts for inclusive weeks
+                return ((int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_WEEK))) + 1;
             case MONTHS:
-                return (int) ((long) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH)));
+                return rounder((differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH)));
             case YEARS:
                 return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_YEAR));
             default:
                 return 0;
+        }
+    }
+
+    private static int rounder(double value) {
+        if (value < 1) {
+            return 1;
+        } else {
+            return (int) value;
         }
     }
 

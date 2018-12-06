@@ -258,7 +258,8 @@ class WooCommerceFragment : Fragment(), CustomRangeContract {
 
         fetch_top_earners_stats.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, false
+                val payload = FetchTopEarnersStatsPayload(
+                        it, StatsGranularity.DAYS, 10, false
                 )
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()
@@ -266,7 +267,8 @@ class WooCommerceFragment : Fragment(), CustomRangeContract {
 
         fetch_top_earners_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchTopEarnersStatsPayload(it, StatsGranularity.DAYS, 10, true
+                val payload = FetchTopEarnersStatsPayload(
+                        it, StatsGranularity.DAYS, 10, true
                 )
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchTopEarnersStatsAction(payload))
             } ?: showNoWCSitesToast()

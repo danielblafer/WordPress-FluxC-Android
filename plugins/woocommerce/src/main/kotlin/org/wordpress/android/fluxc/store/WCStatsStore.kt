@@ -21,6 +21,7 @@ import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError
 import org.wordpress.android.fluxc.utils.SiteUtils
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
+import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -123,7 +124,8 @@ class WCStatsStore @Inject constructor(
         val site: SiteModel,
         val granularity: StatsGranularity,
         val limit: Int = 10,
-        val forced: Boolean = false
+        val forced: Boolean = false,
+        val customRange: StatsCustomRange = StatsCustomRange()
     ) : Payload<BaseNetworkError>()
 
     class FetchTopEarnersStatsResponsePayload(
@@ -252,7 +254,7 @@ class WCStatsStore @Inject constructor(
                 StatsGranularity.MONTHS -> STATS_QUANTITY_MONTHS
                 StatsGranularity.YEARS -> {
                     // Years since 2011 (WooCommerce initial release), inclusive
-                    SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR).toInt() - 2011 + 1
+                    SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR, false, Date()).toInt() - 2011 + 1
                 }
             }
         }
@@ -266,7 +268,7 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity),
+                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
                 quantity,
                 payload.forced,
                 this.customVal
@@ -278,7 +280,7 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchVisitorStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity),
+                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
                 quantity,
                 payload.forced,
                 payload.isCustom
@@ -289,7 +291,7 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchTopEarnersStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity),
+                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
                 payload.limit,
                 payload.forced
         )
@@ -334,12 +336,23 @@ class WCStatsStore @Inject constructor(
         emitChange(onTopEarnersChanged)
     }
 
-    private fun getFormattedDate(site: SiteModel, granularity: StatsGranularity): String {
+    private fun getFormattedDate(
+        site: SiteModel,
+        granularity: StatsGranularity,
+        isCustom: Int,
+        customDate: Date
+    ): String {
+        val customBool = isCustom == IS_CUSTOM
+
         return when (granularity) {
-            StatsGranularity.DAYS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY)
-            StatsGranularity.WEEKS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_WEEK)
-            StatsGranularity.MONTHS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_MONTH)
-            StatsGranularity.YEARS -> SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR)
+            StatsGranularity.DAYS ->
+                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY, customBool, customDate)
+            StatsGranularity.WEEKS ->
+                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_WEEK, customBool, customDate)
+            StatsGranularity.MONTHS ->
+                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_MONTH, customBool, customDate)
+            StatsGranularity.YEARS ->
+                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR, customBool, customDate)
         }
     }
 
