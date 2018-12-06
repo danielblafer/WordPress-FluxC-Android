@@ -67,7 +67,7 @@ class WCStatsStoreTest {
 
         // Create a second stats entry for this site
         val orderStatsModel2 =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", fields = "fake-data", data = "fake-data")
+                WCStatsTestUtils.generateSampleStatsModel(unit = "month", custom = WCStatsStore.IS_NOT_CUSTOM, fields = "fake-data", data = "fake-data")
         WCStatsSqlUtils.insertOrUpdateStats(orderStatsModel2)
 
         with(WellSql.select(WCOrderStatsModel::class.java).asModel) {
@@ -108,7 +108,7 @@ class WCStatsStoreTest {
 
             // The date value passed to the network client should match the current date on the site
             val dateArgument = argumentCaptor<String>()
-            verify(mockOrderStatsRestClient).fetchStats(any(), any(), dateArgument.capture(), any(), any())
+            verify(mockOrderStatsRestClient).fetchStats(any(), any(), dateArgument.capture(), any(), any(), any())
             val siteDate = dateArgument.firstValue
             assertEquals(timeOnSite, siteDate)
             return@let siteDate
@@ -124,7 +124,7 @@ class WCStatsStoreTest {
 
             // The date value passed to the network client should match the current date on the site
             val dateArgument = argumentCaptor<String>()
-            verify(mockOrderStatsRestClient).fetchStats(any(), any(), dateArgument.capture(), any(), any())
+            verify(mockOrderStatsRestClient).fetchStats(any(), any(), dateArgument.capture(), any(), any(), any())
             val siteDate = dateArgument.firstValue
             assertEquals(timeOnSite, siteDate)
             return@let siteDate
@@ -142,7 +142,7 @@ class WCStatsStoreTest {
         val dayOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel()
         val site = SiteModel().apply { id = dayOrderStatsModel.localSiteId }
         val monthOrderStatsModel =
-                WCStatsTestUtils.generateSampleStatsModel(unit = "month", fields = "fake-data", data = "fake-data")
+                WCStatsTestUtils.generateSampleStatsModel(unit = "month", custom = WCStatsStore.IS_NOT_CUSTOM, fields = "fake-data", data = "fake-data")
         WCStatsSqlUtils.insertOrUpdateStats(dayOrderStatsModel)
         WCStatsSqlUtils.insertOrUpdateStats(monthOrderStatsModel)
 
@@ -150,27 +150,27 @@ class WCStatsStoreTest {
         val altSiteOrderStatsModel = WCStatsTestUtils.generateSampleStatsModel(localSiteId = site2.id)
         WCStatsSqlUtils.insertOrUpdateStats(altSiteOrderStatsModel)
 
-        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.DAY)
+        val dayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.DAY, WCStatsStore.IS_NOT_CUSTOM)
         assertNotNull(dayOrderStats)
         with(dayOrderStats!!) {
             assertEquals("day", unit)
         }
 
-        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site2, OrderStatsApiUnit.DAY)
+        val altSiteDayOrderStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site2, OrderStatsApiUnit.DAY, WCStatsStore.IS_NOT_CUSTOM)
         assertNotNull(altSiteDayOrderStats)
 
-        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.MONTH)
+        val monthOrderStatus = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.MONTH, WCStatsStore.IS_NOT_CUSTOM)
         assertNotNull(monthOrderStatus)
         with(monthOrderStatus!!) {
             assertEquals("month", unit)
         }
 
         val nonExistentSite = WCStatsSqlUtils.getRawStatsForSiteAndUnit(
-                SiteModel().apply { id = 88 }, OrderStatsApiUnit.DAY
+                SiteModel().apply { id = 88 }, OrderStatsApiUnit.DAY, WCStatsStore.IS_NOT_CUSTOM
         )
         assertNull(nonExistentSite)
 
-        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.YEAR)
+        val missingData = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, OrderStatsApiUnit.YEAR, WCStatsStore.IS_NOT_CUSTOM)
         assertNull(missingData)
     }
 
@@ -181,8 +181,8 @@ class WCStatsStoreTest {
 
         WCStatsSqlUtils.insertOrUpdateStats(orderStatsModel)
 
-        val revenueStats = wcStatsStore.getRevenueStats(site, StatsGranularity.DAYS)
-        val orderStats = wcStatsStore.getOrderStats(site, StatsGranularity.DAYS)
+        val revenueStats = wcStatsStore.getRevenueStats(site, StatsGranularity.DAYS, WCStatsStore.IS_NOT_CUSTOM)
+        val orderStats = wcStatsStore.getOrderStats(site, StatsGranularity.DAYS, WCStatsStore.IS_NOT_CUSTOM)
 
         assertTrue(revenueStats.isNotEmpty())
         assertTrue(orderStats.isNotEmpty())

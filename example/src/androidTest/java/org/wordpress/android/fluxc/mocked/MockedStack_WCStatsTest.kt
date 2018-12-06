@@ -17,6 +17,7 @@ import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.module.ResponseMockingInterceptor
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
+import org.wordpress.android.fluxc.store.WCStatsStore
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
@@ -208,7 +209,8 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
     @Test
     fun testVisitorStatsSuccess() {
         interceptor.respondWith("wc-visitor-stats-response-success.json")
-        orderStatsRestClient.fetchVisitorStats(siteModel, OrderStatsApiUnit.MONTH, "2018-04-20", 12, true)
+        orderStatsRestClient.fetchVisitorStats(siteModel, OrderStatsApiUnit.MONTH, "2018-04-20", 12, true,
+                WCStatsStore.IS_NOT_CUSTOM)
 
         countDownLatch = CountDownLatch(1)
         assertTrue(countDownLatch.await(TestUtils.DEFAULT_TIMEOUT_MS.toLong(), MILLISECONDS))
@@ -231,7 +233,8 @@ class MockedStack_WCStatsTest : MockedStack_Base() {
         }
 
         interceptor.respondWithError(errorJson)
-        orderStatsRestClient.fetchVisitorStats(siteModel, OrderStatsApiUnit.MONTH, "invalid", 1, true)
+        orderStatsRestClient.fetchVisitorStats(siteModel, OrderStatsApiUnit.MONTH, "invalid", 1, true
+                , WCStatsStore.IS_NOT_CUSTOM)
 
         countDownLatch = CountDownLatch(1)
         assertTrue(countDownLatch.await(TestUtils.DEFAULT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS))
