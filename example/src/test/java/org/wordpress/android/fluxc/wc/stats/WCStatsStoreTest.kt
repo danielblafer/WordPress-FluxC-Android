@@ -108,7 +108,7 @@ class WCStatsStoreTest {
             val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS)
             wcStatsStore.onAction(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
 
-            val timeOnSite = getCurrentDateTimeForSite(it, "yyyy-MM-dd")
+            val timeOnSite = getCurrentDateTimeForSite(it, SimpleDateFormat("yyyy-MM-dd"))
 
             // The date value passed to the network client should match the current date on the site
             val dateArgument = argumentCaptor<String>()
@@ -124,7 +124,7 @@ class WCStatsStoreTest {
             val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS)
             wcStatsStore.onAction(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
 
-            val timeOnSite = getCurrentDateTimeForSite(it, "yyyy-MM-dd")
+            val timeOnSite = getCurrentDateTimeForSite(it, SimpleDateFormat("yyyy-MM-dd"))
 
             // The date value passed to the network client should match the current date on the site
             val dateArgument = argumentCaptor<String>()

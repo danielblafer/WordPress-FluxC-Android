@@ -18,21 +18,21 @@ class SiteUtilsTest {
     fun testGetCurrentDateTimeUtcSite() {
         val siteModel = SiteModel()
         with(siteModel) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             val currentTimeUtc = DateTimeUtils.iso8601UTCFromDate(Date())
             assertEquals(currentTimeUtc, formattedDate.replace("Z", "+00:00"))
         }
 
         siteModel.timezone = ""
         with(siteModel) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             val currentTimeUtc = DateTimeUtils.iso8601UTCFromDate(Date())
             assertEquals(currentTimeUtc, formattedDate.replace("Z", "+00:00"))
         }
 
         siteModel.timezone = "0"
         with(siteModel) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             val currentTimeUtc = DateTimeUtils.iso8601UTCFromDate(Date())
             assertEquals(currentTimeUtc, formattedDate.replace("Z", "+00:00"))
         }
@@ -44,7 +44,7 @@ class SiteUtilsTest {
 
         val estSite = SiteModel().apply { timezone = "-4" }
         with(estSite) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             assertEquals("-04:00", formattedDate.takeLast(6))
 
             val currentHour = hourFormat.format(DateTimeUtils.nowUTC())
@@ -53,7 +53,7 @@ class SiteUtilsTest {
 
         val acstSite = SiteModel().apply { timezone = "9.5" }
         with(acstSite) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             assertEquals("+09:30", formattedDate.takeLast(6))
 
             val currentHour = hourFormat.format(DateTimeUtils.nowUTC())
@@ -62,7 +62,7 @@ class SiteUtilsTest {
 
         val nptSite = SiteModel().apply { timezone = "5.75" }
         with(nptSite) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             assertEquals("+05:45", formattedDate.takeLast(6))
 
             val currentHour = hourFormat.format(DateTimeUtils.nowUTC())
@@ -71,7 +71,7 @@ class SiteUtilsTest {
 
         val imaginaryQuarterTimeZoneSite = SiteModel().apply { timezone = "-2.25" }
         with(imaginaryQuarterTimeZoneSite) {
-            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, UTC8601_FORMAT)
+            val formattedDate = SiteUtils.getCurrentDateTimeForSite(this, SimpleDateFormat(UTC8601_FORMAT))
             assertEquals("-02:15", formattedDate.takeLast(6))
 
             val currentHour = hourFormat.format(DateTimeUtils.nowUTC())
