@@ -32,8 +32,6 @@ class WCStatsStore @Inject constructor(
     dispatcher: Dispatcher,
     private val wcOrderStatsClient: OrderStatsRestClient
 ) : Store(dispatcher) {
-    private var customVal: Boolean = false
-
     companion object {
         const val STATS_QUANTITY_DAYS = 30
         const val STATS_QUANTITY_WEEKS = 17
@@ -77,7 +75,6 @@ class WCStatsStore @Inject constructor(
         val site: SiteModel,
         val granularity: StatsGranularity,
         val forced: Boolean = false,
-        val isCustom: Boolean = false,
         val customRange: StatsCustomRange = StatsCustomRange()
     ) : Payload<BaseNetworkError>()
 
@@ -103,7 +100,6 @@ class WCStatsStore @Inject constructor(
         val site: SiteModel,
         val granularity: StatsGranularity,
         val forced: Boolean = false,
-        val isCustom: Boolean = false,
         val customRange: StatsCustomRange = StatsCustomRange()
     ) : Payload<BaseNetworkError>()
 
@@ -242,8 +238,7 @@ class WCStatsStore @Inject constructor(
         granularity: StatsGranularity,
         customRange: StatsCustomRange
     ): Int {
-        return if (this.customVal) {
-            customRange.checkForSwitchedDates()
+        return if (customRange.customObject) {
             DateUtils.calculateTimeDifferencesBetweenDates(customRange.startDate, customRange.endDate, granularity.name)
         } else {
             when (granularity) {
@@ -260,17 +255,19 @@ class WCStatsStore @Inject constructor(
     }
 
     private fun fetchOrderStats(payload: FetchOrderStatsPayload) {
-        this.customVal = payload.isCustom
-
         val quantity = getQuantityForGranularity(payload.site, payload.granularity, payload.customRange)
 
         wcOrderStatsClient.fetchStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
+                getFormattedDate(
+                        payload.site, payload.granularity,
+                        payload.customRange.customObject,
+                        payload.customRange.endDate
+                ),
                 quantity,
                 payload.forced,
-                this.customVal
+                payload.customRange.customObject
         )
     }
 
@@ -279,10 +276,15 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchVisitorStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
+                getFormattedDate(
+                        payload.site,
+                        payload.granularity,
+                        payload.customRange.customObject,
+                        payload.customRange.endDate
+                ),
                 quantity,
                 payload.forced,
-                payload.isCustom
+                payload.customRange.customObject
         )
     }
 
@@ -290,7 +292,12 @@ class WCStatsStore @Inject constructor(
         wcOrderStatsClient.fetchTopEarnersStats(
                 payload.site,
                 OrderStatsApiUnit.fromStatsGranularity(payload.granularity),
-                getFormattedDate(payload.site, payload.granularity, this.customVal, payload.customRange.endDate),
+                getFormattedDate(
+                        payload.site,
+                        payload.granularity,
+                        payload.customRange.customObject,
+                        payload.customRange.endDate
+                ),
                 payload.limit,
                 payload.forced
         )
@@ -302,9 +309,8 @@ class WCStatsStore @Inject constructor(
             if (isError || stats == null) {
                 return@with OnWCStatsChanged(0, granularity, payload.isCustom).also { it.error = payload.error }
             } else {
-                if (customVal) {
+                if (payload.isCustom) {
                     stats.custom = 1
-                    customVal = false
                 }
                 val rowsAffected = WCStatsSqlUtils.insertOrUpdateStats(stats)
                 return@with OnWCStatsChanged(rowsAffected, granularity, payload.isCustom)

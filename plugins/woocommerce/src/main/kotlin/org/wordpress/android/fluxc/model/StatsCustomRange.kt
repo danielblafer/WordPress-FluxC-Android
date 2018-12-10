@@ -9,9 +9,10 @@ class StatsCustomRange(
     // In the future we need to use LocalDate. The MinApi Call is #26 though which may prove a bit steep. Still, it
     //  reduces boiler plate code so much.
     var startDate: Date = Date(),
-    var endDate: Date = Date()
+    var endDate: Date = Date(),
+    var customObject: Boolean = false
 ) {
-    fun checkForSwitchedDates() {
+    init {
         if (startDate.time > endDate.time) {
             val tempEndDate = this.endDate
             this.endDate = this.startDate

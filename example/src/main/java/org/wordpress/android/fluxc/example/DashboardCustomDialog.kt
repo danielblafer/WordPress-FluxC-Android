@@ -55,7 +55,9 @@ class DashboardCustomDialog : DialogFragment() {
             if (!dialog_start_date.text.isEmpty() && !dialog_end_date.text.isEmpty()) {
                 val statsCustomRange = StatsCustomRange(
                         formatter.parse(dialog_start_date.text.toString()),
-                        formatter.parse(dialog_end_date.text.toString()))
+                        formatter.parse(dialog_end_date.text.toString()),
+                        true
+                )
 
                 customRangeContract!!.userDefinedCustomRange(
                         statsCustomRange,

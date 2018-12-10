@@ -293,7 +293,6 @@ class WooCommerceFragment : Fragment(), CustomRangeContract {
                 getFirstWCSite()!!,
                 statsGranularity,
                 true,
-                true,
                 statsCustomRange
         )
         dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
