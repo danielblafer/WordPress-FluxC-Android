@@ -310,7 +310,7 @@ class WCStatsStore @Inject constructor(
                 return@with OnWCStatsChanged(0, granularity, payload.isCustom).also { it.error = payload.error }
             } else {
                 if (payload.isCustom) {
-                    stats.custom = 1
+                    stats.hasCustom = true
                 }
                 val rowsAffected = WCStatsSqlUtils.insertOrUpdateStats(stats)
                 return@with OnWCStatsChanged(rowsAffected, granularity, payload.isCustom)
@@ -384,7 +384,7 @@ class WCStatsStore @Inject constructor(
         isCustom: Boolean
     ): Map<String, T> {
         val apiUnit = OrderStatsApiUnit.fromStatsGranularity(granularity)
-        val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit, if (isCustom) 1 else 0)
+        val rawStats = WCStatsSqlUtils.getRawStatsForSiteAndUnit(site, apiUnit, isCustom)
         rawStats?.let {
             val periodIndex = it.getIndexForField(OrderStatsField.PERIOD)
             val fieldIndex = it.getIndexForField(field)

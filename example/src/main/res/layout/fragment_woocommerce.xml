@@ -122,7 +122,7 @@
             android:id="@+id/fetch_past_30_days"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Fetch Order Past Days"/>
+            android:text="Fetch 30-day order stats"/>
 
         <Button
             android:id="@+id/fetch_custom_range_orders"

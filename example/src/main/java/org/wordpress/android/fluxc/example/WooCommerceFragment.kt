@@ -234,24 +234,21 @@ class WooCommerceFragment : Fragment(), CustomRangeContract {
 
         fetch_order_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS, true
-                )
+                val payload = FetchOrderStatsPayload(it, StatsGranularity.DAYS, true)
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchOrderStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_visitor_stats.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, false
-                )
+                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, false)
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchVisitorStatsAction(payload))
             } ?: showNoWCSitesToast()
         }
 
         fetch_visitor_stats_forced.setOnClickListener {
             getFirstWCSite()?.let {
-                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, true
-                )
+                val payload = FetchVisitorStatsPayload(it, StatsGranularity.MONTHS, true)
                 dispatcher.dispatch(WCStatsActionBuilder.newFetchVisitorStatsAction(payload))
             } ?: showNoWCSitesToast()
         }

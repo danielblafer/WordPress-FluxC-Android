@@ -460,7 +460,7 @@ public class WellSqlConfig extends DefaultWellConfig {
                     break;
                 case 46:
                     AppLog.d(T.DB, "Migrating addon " + addOnName + " to version " + (oldDbVersion + 1));
-                    db.execSQL("ALTER TABLE WCOrderStatsModel ADD CUSTOM INTEGER");
+                    db.execSQL("ALTER TABLE WCOrderStatsModel ADD HAS_CUSTOM INTEGER");
                     break;
             }
         }
