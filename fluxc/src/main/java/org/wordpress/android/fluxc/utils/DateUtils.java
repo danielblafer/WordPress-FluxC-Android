@@ -1,6 +1,5 @@
 package org.wordpress.android.fluxc.utils;
 
-import java.util.Calendar;
 import java.util.Date;
 
 public class DateUtils {
@@ -35,36 +34,19 @@ public class DateUtils {
 
         switch (time) {
             case DAYS:
-                // The +1 counts for inclusive days
+                // The +1 accounts for inclusive days
                 return ((int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS))) + 1;
             case WEEKS:
-                // The +1 counts for inclusive weeks
+                // The +1 accounts for inclusive weeks
                 return ((int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_WEEK))) + 1;
             case MONTHS:
-                return rounder((differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH)));
+                // Ceil (rounding up) accounts for inclusive months
+                return ((int) Math.ceil((differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_MONTH))));
             case YEARS:
-                return (int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_YEAR));
+                // The +1 accounts for inclusive years
+                return ((int) (differenceInTimeMS / (MILLISECONDS * ONE_DAY_IN_SECONDS * DAYS_IN_A_YEAR))) + 1;
             default:
                 return 0;
         }
-    }
-
-    private static int rounder(double value) {
-        if (value < 1) {
-            return 1;
-        } else {
-            return (int) value;
-        }
-    }
-
-    /**
-     * Creates a calendar based on the passed date and checks which week that calendar is on
-     * @param date the date in question
-     * @return the week the calendar is set in
-     */
-    public static int getWeekNumberInCalendar(Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        return calendar.get(Calendar.WEEK_OF_YEAR);
     }
 }

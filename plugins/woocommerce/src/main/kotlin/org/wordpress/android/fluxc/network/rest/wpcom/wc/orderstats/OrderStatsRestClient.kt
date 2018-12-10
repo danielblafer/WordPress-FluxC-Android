@@ -21,7 +21,7 @@ import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsRespon
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsError
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
-import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.NO_FIELDS_AVAILABLE
+import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.NO_DATA_AVAILABLE
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
@@ -95,7 +95,7 @@ class OrderStatsRestClient(
                     }
 
                     if (noData) {
-                        val orderStatsError = OrderStatsError(NO_FIELDS_AVAILABLE, "No Data to Return")
+                        val orderStatsError = OrderStatsError(NO_DATA_AVAILABLE, "No Data to Return")
                         val payload = FetchOrderStatsResponsePayload(orderStatsError, site, unit)
                         mDispatcher.dispatch(WCStatsActionBuilder.newFetchedOrderStatsAction(payload))
                     } else {

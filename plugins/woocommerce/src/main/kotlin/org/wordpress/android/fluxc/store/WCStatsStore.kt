@@ -21,6 +21,7 @@ import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError
 import org.wordpress.android.fluxc.utils.SiteUtils
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -143,7 +144,7 @@ class WCStatsStore @Inject constructor(
     enum class OrderStatsErrorType {
         INVALID_PARAM,
         GENERIC_ERROR,
-        NO_FIELDS_AVAILABLE;
+        NO_DATA_AVAILABLE;
 
         companion object {
             private val reverseMap = OrderStatsErrorType.values().associateBy(OrderStatsErrorType::name)
@@ -254,7 +255,8 @@ class WCStatsStore @Inject constructor(
                 StatsGranularity.MONTHS -> STATS_QUANTITY_MONTHS
                 StatsGranularity.YEARS -> {
                     // Years since 2011 (WooCommerce initial release), inclusive
-                    SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR, false, Date()).toInt() - 2011 + 1
+                    val dateFormat = SimpleDateFormat(DATE_FORMAT_YEAR, Locale.ROOT)
+                    SiteUtils.getCurrentDateTimeForSite(site, dateFormat).toInt() - 2011 + 1
                 }
             }
         }
@@ -346,13 +348,28 @@ class WCStatsStore @Inject constructor(
 
         return when (granularity) {
             StatsGranularity.DAYS ->
-                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_DAY, customBool, customDate)
+                filterDatesForSite(site, DATE_FORMAT_DAY, customBool, customDate)
             StatsGranularity.WEEKS ->
-                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_WEEK, customBool, customDate)
+                filterDatesForSite(site, DATE_FORMAT_WEEK, customBool, customDate)
             StatsGranularity.MONTHS ->
-                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_MONTH, customBool, customDate)
+                filterDatesForSite(site, DATE_FORMAT_MONTH, customBool, customDate)
             StatsGranularity.YEARS ->
-                SiteUtils.getCurrentDateTimeForSite(site, DATE_FORMAT_YEAR, customBool, customDate)
+                filterDatesForSite(site, DATE_FORMAT_YEAR, customBool, customDate)
+        }
+    }
+
+    private fun filterDatesForSite(
+        site: SiteModel,
+        pattern: String,
+        isCustom: Boolean,
+        customDate: Date
+    ): String {
+        val dateFormat = SimpleDateFormat(pattern, Locale.ROOT)
+
+        return if (isCustom) {
+            SiteUtils.getDateTimeForSite(site, pattern, customDate)
+        } else {
+            SiteUtils.getCurrentDateTimeForSite(site, dateFormat)
         }
     }
 

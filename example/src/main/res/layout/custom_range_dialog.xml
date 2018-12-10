@@ -6,9 +6,8 @@
     android:gravity="center"
     android:orientation="vertical">
 
-
     <EditText
-        android:id="@+id/startDate"
+        android:id="@+id/dialog_start_date"
         android:hint="Start Date"
         android:focusable="false"
         android:padding="10dp"
@@ -17,7 +16,7 @@
         android:layout_height="wrap_content"/>
 
     <EditText
-        android:id="@+id/endDate"
+        android:id="@+id/dialog_end_date"
         android:hint="End Date"
         android:focusable="false"
         android:padding="10dp"
@@ -26,7 +25,7 @@
         android:layout_height="wrap_content"/>
 
     <Spinner
-        android:id="@+id/granularitySpinner"
+        android:id="@+id/dialog_spinner"
         android:padding="10dp"
         android:layout_margin="20dp"
         android:layout_width="wrap_content"
@@ -35,7 +34,7 @@
         android:spinnerMode="dropdown"/>
 
     <android.support.v7.widget.AppCompatButton
-        android:id="@+id/confirmCustomStatsButton"
+        android:id="@+id/dialog_confirm_stats"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"

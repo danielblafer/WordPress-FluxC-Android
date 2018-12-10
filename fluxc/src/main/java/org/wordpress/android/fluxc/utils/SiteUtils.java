@@ -18,17 +18,9 @@ public class SiteUtils {
      * <p>
      * Imported from WordPress-Android with some modifications.
      */
-    public static @NonNull String getCurrentDateTimeForSite(@NonNull SiteModel site,
-                                                            @NonNull String pattern,
-                                                            boolean isCustom,
-                                                            @NonNull Date customDate) {
+    public static @NonNull String getCurrentDateTimeForSite(@NonNull SiteModel site, @NonNull String pattern) {
         SimpleDateFormat dateFormat = new SimpleDateFormat(pattern, Locale.ROOT);
-
-        if (isCustom) {
-            return getDateTimeForSite(site, pattern, customDate);
-        } else {
-            return getCurrentDateTimeForSite(site, dateFormat);
-        }
+        return getCurrentDateTimeForSite(site, dateFormat);
     }
 
     /**

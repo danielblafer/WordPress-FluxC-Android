@@ -8,10 +8,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.Toast
+import kotlinx.android.synthetic.main.custom_range_dialog.*
 import org.wordpress.android.fluxc.example.contract.CustomRangeContract
 import org.wordpress.android.fluxc.model.StatsCustomRange
 import org.wordpress.android.fluxc.store.WCStatsStore
@@ -21,15 +20,11 @@ import java.util.Calendar
 import java.util.Locale
 
 class DashboardCustomDialog : DialogFragment() {
-    private var simpleDateFormat: SimpleDateFormat? = null
-    private var calendar: Calendar? = null
-
-    private var startDate: EditText? = null
-    private var endDate: EditText? = null
-    private var granularityList: Spinner? = null
+    private val calendar: Calendar by lazy {
+        Calendar.getInstance()
+    }
 
     private var customRangeContract: CustomRangeContract? = null
-
     private val formatter = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
 
     override fun onAttach(context: Context?) {
@@ -37,43 +32,34 @@ class DashboardCustomDialog : DialogFragment() {
         customRangeContract = targetFragment as CustomRangeContract
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        simpleDateFormat = SimpleDateFormat(WCStatsStore.DATE_FORMAT_DAY, Locale.ROOT)
-        calendar = Calendar.getInstance()
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         super.onCreateView(inflater, container, savedInstanceState)
-        val view = inflater.inflate(R.layout.custom_range_dialog, container, false)
+        return inflater.inflate(R.layout.custom_range_dialog, container, false)
+    }
 
-        startDate = view.findViewById(R.id.startDate)
-        endDate = view.findViewById(R.id.endDate)
-        granularityList = view.findViewById(R.id.granularitySpinner)
-        val okButton = view.findViewById<Button>(R.id.confirmCustomStatsButton)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        granularityList!!.adapter = ArrayAdapter<StatsGranularity>(
+        dialog_spinner.adapter = ArrayAdapter<StatsGranularity>(
                 activity,
                 android.R.layout.simple_spinner_dropdown_item,
                 granularityList()
         )
 
-        dateListeners(calendar!!, startDate!!, endDate!!)
-        buttonListener(okButton)
-
-        return view
+        dateListeners(calendar, dialog_start_date, dialog_end_date)
+        buttonListener()
     }
 
-    private fun buttonListener(okButton: Button) {
-        okButton.setOnClickListener {
-            if (!startDate!!.text.isEmpty() && !endDate!!.text.isEmpty()) {
+    private fun buttonListener() {
+        dialog_confirm_stats.setOnClickListener {
+            if (!dialog_start_date.text.isEmpty() && !dialog_end_date.text.isEmpty()) {
                 val statsCustomRange = StatsCustomRange(
-                        formatter.parse(startDate!!.text.toString()),
-                        formatter.parse(endDate!!.text.toString()))
+                        formatter.parse(dialog_start_date.text.toString()),
+                        formatter.parse(dialog_end_date.text.toString()))
 
                 customRangeContract!!.userDefinedCustomRange(
                         statsCustomRange,
-                        granularityList!!.selectedItem as StatsGranularity
+                        dialog_spinner.selectedItem as StatsGranularity
                 )
                 dismissDialog()
             } else {
@@ -86,15 +72,7 @@ class DashboardCustomDialog : DialogFragment() {
         }
     }
 
-    private fun granularityList(): MutableList<StatsGranularity> {
-        val values: MutableList<StatsGranularity> = ArrayList()
-
-        StatsGranularity.values().forEach { granularity ->
-            values.add(granularity)
-        }
-
-        return values
-    }
+    private fun granularityList() = StatsGranularity.values().toMutableList()
 
     private fun dateListeners(
         calendar: Calendar,
@@ -105,7 +83,7 @@ class DashboardCustomDialog : DialogFragment() {
             calendar.set(Calendar.YEAR, year)
             calendar.set(Calendar.MONTH, monthOfYear)
             calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-            startDate.setText(simpleDateFormat!!.format(calendar.time))
+            startDate.setText(formatter.format(calendar.time))
         }
 
         startDate.setOnClickListener {
@@ -122,7 +100,7 @@ class DashboardCustomDialog : DialogFragment() {
             calendar.set(Calendar.YEAR, year)
             calendar.set(Calendar.MONTH, monthOfYear)
             calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-            endDate.setText(simpleDateFormat!!.format(calendar.time))
+            endDate.setText(formatter.format(calendar.time))
         }
 
         endDate.setOnClickListener {
