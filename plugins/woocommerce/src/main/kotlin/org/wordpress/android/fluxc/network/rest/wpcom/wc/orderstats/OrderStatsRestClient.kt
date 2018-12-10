@@ -15,7 +15,6 @@ import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest
 import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGsonNetworkError
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
-import org.wordpress.android.fluxc.store.WCStatsStore
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
@@ -71,7 +70,7 @@ class OrderStatsRestClient(
         date: String,
         quantity: Int,
         force: Boolean = false,
-        isCustom: Int = WCStatsStore.IS_NOT_CUSTOM
+        isCustom: Boolean = false
     ) {
         val url = WPCOMV2.sites.site(site.siteId).stats.orders.url
         val params = mapOf(
@@ -121,7 +120,7 @@ class OrderStatsRestClient(
         date: String,
         quantity: Int,
         force: Boolean = false,
-        isCustom: Int
+        isCustom: Boolean
     ) {
         val url = WPCOMREST.sites.site(site.siteId).stats.visits.urlV1_1
         val params = mapOf(
