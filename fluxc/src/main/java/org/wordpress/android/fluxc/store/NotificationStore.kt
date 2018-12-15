@@ -204,6 +204,11 @@ constructor(
     fun getNotificationByRemoteId(remoteNoteId: Long) =
             notificationSqlUtils.getNotificationByRemoteId(remoteNoteId)
 
+    /**
+     * Returns true if there are any unread WC notifications
+     */
+    fun hasUnreadStoreNotifications(site: SiteModel) = notificationSqlUtils.hasUnreadStoreNotifications(site)
+
     private fun registerDevice(payload: RegisterDevicePayload) {
         val uuid = preferences.getString(WPCOM_PUSH_DEVICE_UUID, null) ?: generateAndStoreUUID()
 
