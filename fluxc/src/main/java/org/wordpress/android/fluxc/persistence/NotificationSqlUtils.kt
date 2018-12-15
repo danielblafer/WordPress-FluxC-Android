@@ -9,9 +9,9 @@ import com.yarolegovich.wellsql.core.Identifiable
 import com.yarolegovich.wellsql.core.annotation.Column
 import com.yarolegovich.wellsql.core.annotation.PrimaryKey
 import com.yarolegovich.wellsql.core.annotation.Table
-import org.wordpress.android.fluxc.model.notification.NotificationModel
 import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.notification.NoteIdSet
+import org.wordpress.android.fluxc.model.notification.NotificationModel
 import org.wordpress.android.fluxc.model.notification.NotificationModel.Kind
 import org.wordpress.android.fluxc.tools.FormattableContent
 import org.wordpress.android.fluxc.tools.FormattableContentMapper
@@ -116,6 +116,33 @@ class NotificationSqlUtils @Inject constructor(private val formattableContentMap
                 .map { it.build(formattableContentMapper) }
         return emptyList()
     }
+
+    /**
+     * Returns a list of unread STORE_ORDER or STORE_REVIEW notifications
+     */
+    fun getUnreadStoreNotifications(site: SiteModel): List<NotificationModel> {
+        val filterByType = listOf(NotificationModel.Kind.STORE_ORDER.toString())
+        val filterBySubtype = listOf(NotificationModel.Subkind.STORE_REVIEW.toString())
+
+        val conditionClauseBuilder = WellSql.select(NotificationModelBuilder::class.java)
+                .where()
+                .equals(NotificationModelTable.LOCAL_SITE_ID, site.id)
+                .equals(NotificationModelTable.READ, "0")
+                .beginGroup()
+                    .isIn(NotificationModelTable.TYPE, filterByType)
+                    .or()
+                    .isIn(NotificationModelTable.SUBTYPE, filterBySubtype)
+                .endGroup()
+                .endWhere()
+                .orderBy(NotificationModelTable.TIMESTAMP, ORDER_DESCENDING)
+
+        return conditionClauseBuilder.asModel.map { it.build(formattableContentMapper) }
+    }
+
+    /**
+     * Returns true if there are any unread STORE_ORDER or STORE_REVIEW notifications
+     */
+    fun hasUnreadStoreNotifications(site: SiteModel) = getUnreadStoreNotifications(site).size > 0
 
     fun getNotificationByIdSet(idSet: NoteIdSet): NotificationModel? {
         val (id, remoteNoteId, localSiteId) = idSet
